@@ -12,7 +12,7 @@ import zhCN from "antd/locale/zh_CN";
 
 export type Mode = "dark" | "light";
 
-// Palettes follow VS Code "Dark Modern" / "Light Modern"; CSS reads the same
+// Palettes borrow VS Code Dark/Light Modern colours; CSS reads the same
 // values through [data-theme] variables in styles.css.
 export const palettes = {
   dark: {

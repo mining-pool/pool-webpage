@@ -21,6 +21,7 @@ import {
 } from "@ant-design/icons";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { AdminAccess } from "../components/AdminAccess";
+import { BlocksTable } from "../components/PaymentData";
 import {
   Metric,
   PageTitle,
@@ -29,7 +30,7 @@ import {
   Refresh,
 } from "../components/Common";
 import { api } from "../lib/api";
-import { formatRate, formatUnits, minerPath, shorten } from "../lib/format";
+import { formatRate, minerPath } from "../lib/format";
 import { useMetadata, usePayments, usePool } from "../lib/queries";
 import { site } from "../lib/config";
 import PaymentsPage from "./Payments";
@@ -149,34 +150,7 @@ function Operations() {
         extra={<Link to="/admin/payments">检查支付 →</Link>}
       >
         {payments.data ? (
-          <Table
-            rowKey="hash"
-            pagination={{ pageSize: 5, hideOnSinglePage: true }}
-            scroll={{ x: 540 }}
-            dataSource={[...payments.data.blocks].reverse()}
-            columns={[
-              { title: "高度", dataIndex: "height" },
-              {
-                title: "区块哈希",
-                dataIndex: "hash",
-                render: (hash: string) => (
-                  <Typography.Text
-                    className="mono"
-                    copyable={{ text: hash }}
-                    title={hash}
-                  >
-                    {shorten(hash)}
-                  </Typography.Text>
-                ),
-              },
-              {
-                title: "奖励",
-                dataIndex: "reward",
-                render: (value: string) =>
-                  `${formatUnits(value, payments.data!.decimals)} ${meta.data?.coin.symbol ?? ""}`,
-              },
-            ]}
-          />
+          <BlocksTable data={payments.data} symbol={meta.data?.coin.symbol} />
         ) : (
           <Empty description="当前没有可展示的结算区块数据" />
         )}

@@ -5,9 +5,17 @@ import { validAddress } from "./format";
 const key = "nomp:recent-addresses";
 const event = "nomp:recent-changed";
 
-function read(): string[] {
+function stored(): string | null {
   try {
-    const data: unknown = JSON.parse(localStorage.getItem(key) || "[]");
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function parse(raw: string | null): string[] {
+  try {
+    const data: unknown = JSON.parse(raw || "[]");
     return Array.isArray(data)
       ? data
           .filter((v): v is string => typeof v === "string" && validAddress(v))
@@ -18,31 +26,38 @@ function read(): string[] {
   }
 }
 
-let snapshot = read();
-const refresh = () => {
-  snapshot = read();
-};
+// Re-parse only when the stored string changes, so the snapshot stays
+// referentially stable for useSyncExternalStore yet never goes stale.
+let raw: string | null = null;
+let snapshot: string[] = [];
+function getSnapshot() {
+  const current = stored();
+  if (current !== raw) {
+    raw = current;
+    snapshot = parse(current);
+  }
+  return snapshot;
+}
 
 function subscribe(listener: () => void) {
-  const changed = () => {
-    refresh();
-    listener();
-  };
-  window.addEventListener(event, changed);
-  window.addEventListener("storage", changed);
+  window.addEventListener(event, listener);
+  window.addEventListener("storage", listener);
   return () => {
-    window.removeEventListener(event, changed);
-    window.removeEventListener("storage", changed);
+    window.removeEventListener(event, listener);
+    window.removeEventListener("storage", listener);
   };
 }
 
 export const useRecentAddresses = () =>
-  useSyncExternalStore(subscribe, () => snapshot);
+  useSyncExternalStore(subscribe, getSnapshot);
 
 /** Returns false when the browser refuses storage. */
 export function rememberAddress(address: string): boolean {
   try {
-    const next = [address, ...read().filter((v) => v !== address)].slice(0, 6);
+    const next = [address, ...getSnapshot().filter((v) => v !== address)].slice(
+      0,
+      6,
+    );
     localStorage.setItem(key, JSON.stringify(next));
   } catch {
     return false;

@@ -28,7 +28,7 @@ export async function request<T>(
 ): Promise<T> {
   if (site.demo) {
     const { demoResponse } = await import("./demo");
-    return schema.parse(demoResponse(path));
+    return schema.parse(demoResponse(path, admin));
   }
   let response: Response;
   try {
@@ -90,10 +90,15 @@ export const api = {
       false,
       signal,
     ),
-  payments: async (admin: boolean, signal?: AbortSignal) => {
+  /**
+   * Public callers only receive pool-level data plus the records of `address`;
+   * administrators receive the full ledger.
+   */
+  payments: async (admin: boolean, address = "", signal?: AbortSignal) => {
     // Discover optional capabilities; a broken registered endpoint is an error, not "unsupported".
     const paths = await request("/", z.array(z.string()), admin, signal);
     if (!paths.includes("/payments")) return null;
-    return request("/payments", paymentsSchema, admin, signal);
+    const query = address ? `?address=${encodeURIComponent(address)}` : "";
+    return request(`/payments${query}`, paymentsSchema, admin, signal);
   },
 };

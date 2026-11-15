@@ -62,6 +62,25 @@ describe("NOMP API adapter", () => {
       .mockResolvedValueOnce(reply("payments disabled", 503));
     await expect(api.payments(false)).rejects.toMatchObject({ status: 503 });
   });
+  it("asks the API for one address only and keeps miner counts without a list", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(reply(["/payments"]))
+      .mockResolvedValueOnce(reply(demoResponse("/payments")));
+    vi.stubGlobal("fetch", fetcher);
+    await api.payments(false, "kaspa:q+abc");
+    expect(fetcher.mock.calls[1][0]).toBe(
+      "/api/payments?address=kaspa%3Aq%2Babc",
+    );
+    const pool = poolSchema.parse(demoResponse("/pool"));
+    expect(pool).toMatchObject({ miners: [], minerCount: 12 });
+    // Older backends without minerCount still report a count.
+    expect(
+      poolSchema.parse({ ...pool, minerCount: undefined, miners: ["a", "b"] })
+        .minerCount,
+    ).toBe(2);
+  });
+
   it("reports authentication failures and invalid JSON without exposing response bodies", async () => {
     const fetcher = vi
       .fn()

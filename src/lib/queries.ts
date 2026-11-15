@@ -13,9 +13,9 @@ export const useMetadata = (admin = false) =>
     queryFn: ({ signal }) => api.metadata(admin, signal),
     staleTime: 300000,
   });
-export const usePayments = (admin = false) =>
+export const usePayments = (admin = false, address = "") =>
   useQuery({
-    queryKey: ["payments", admin],
-    queryFn: ({ signal }) => api.payments(admin, signal),
+    queryKey: ["payments", admin, address],
+    queryFn: ({ signal }) => api.payments(admin, address, signal),
     refetchInterval: 60000,
   });

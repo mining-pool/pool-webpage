@@ -1,17 +1,13 @@
-import { Card, Empty, Skeleton, Tag } from "antd";
+import { Card, Tag } from "antd";
 import {
-  ApiOutlined,
   ArrowRightOutlined,
   ClockCircleOutlined,
   ClusterOutlined,
-  DesktopOutlined,
   ThunderboltOutlined,
   TeamOutlined,
-  WalletOutlined,
 } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import { AddressSearch } from "../components/AddressSearch";
-import { CodeBlock } from "../components/CodeBlock";
 import {
   Metric,
   PageTitle,
@@ -20,14 +16,11 @@ import {
   Refresh,
 } from "../components/Common";
 import { useMetadata, usePool } from "../lib/queries";
-import { formatRate, minerPath, shorten } from "../lib/format";
-import { useRecentAddresses } from "../lib/recent";
-import { site } from "../lib/config";
+import { formatRate } from "../lib/format";
 
 export default function Overview() {
   const pool = usePool();
   const meta = useMetadata();
-  const recent = useRecentAddresses();
   return (
     <>
       <PageTitle
@@ -36,71 +29,13 @@ export default function Overview() {
         description="每一份算力，都有迹可循。"
         extra={<Refresh query={pool} />}
       />
-      <section className="welcome">
-        <div className="welcome-main">
-          <h2 className="welcome-title">{site.name}</h2>
-          <p className="welcome-sub">
-            Not Only Mining Pool · 使用钱包地址，即刻查看矿机状态与挖矿数据。
-          </p>
-          <AddressSearch hero />
-          <div className="welcome-columns">
-            <div>
-              <h3>开始</h3>
-              <Link to="/miner">
-                <DesktopOutlined /> 查询我的矿机…
-              </Link>
-              <Link to="/connect">
-                <ApiOutlined /> 连接矿机，开始挖矿…
-              </Link>
-              <Link to="/payments">
-                <WalletOutlined /> 查看支付记录…
-              </Link>
-            </div>
-            <div>
-              <h3>最近</h3>
-              {recent.length ? (
-                recent.slice(0, 5).map((address) => (
-                  <Link key={address} to={minerPath(address)} title={address}>
-                    <span className="mono">{shorten(address)}</span>
-                  </Link>
-                ))
-              ) : (
-                <p className="muted">
-                  查询时勾选“在此设备记住地址”，最近使用的地址会出现在这里。
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="welcome-code">
-          {pool.data || meta.data ? (
-            <CodeBlock
-              filename="pool.json"
-              comment="GET /api/pool · /api/config — 实时接口返回值"
-              value={{
-                coin: meta.data?.coin.name ?? pool.data?.coinName,
-                symbol: meta.data?.coin.symbol,
-                algorithm: meta.data?.algorithm.name,
-                testnet: meta.data?.coin.testnet ?? false,
-                ports: meta.data
-                  ? Object.keys(meta.data.ports)
-                      .map(Number)
-                      .sort((a, b) => a - b)
-                  : [],
-                miners: pool.data?.miners.length,
-                "diff/s": pool.data && {
-                  "1m": pool.data.hashrate1min,
-                  "24h": pool.data.hashrate1d,
-                },
-              }}
-            />
-          ) : (
-            <Card>
-              <Skeleton active paragraph={{ rows: 6 }} />
-            </Card>
-          )}
-        </div>
-      </section>
+      <Card className="lookup-card">
+        <h2>查询你的矿机</h2>
+        <p className="card-subtitle">
+          输入挖矿时使用的钱包地址，即可查看工作量、矿机与支付。无需注册，矿池不公开矿工名单。
+        </p>
+        <AddressSearch hero />
+      </Card>
       <QueryState query={pool} />
       {pool.data && (
         <>
@@ -121,9 +56,9 @@ export default function Overview() {
             />
             <Metric
               label="累计矿工"
-              value={pool.data.miners.length}
+              value={pool.data.minerCount}
               unit="个"
-              note="已记录的矿工地址"
+              note="提交过份额的地址数量"
               icon={<TeamOutlined />}
             />
             <Metric
@@ -180,40 +115,6 @@ export default function Overview() {
               </Link>
             </Card>
           </div>
-          <Card
-            title="矿工索引"
-            extra={
-              <Link to="/miner">
-                查询我的矿机 <ArrowRightOutlined />
-              </Link>
-            }
-          >
-            <p className="card-subtitle">
-              已向矿池提交过份额的地址，按名称排序；不代表当前在线状态。
-            </p>
-            {pool.data.miners.length ? (
-              <div className="miner-list">
-                {[...pool.data.miners]
-                  .sort()
-                  .slice(0, 5)
-                  .map((address, i) => (
-                    <Link key={address} to={minerPath(address)}>
-                      <span className="miner-rank">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <span className="wallet-symbol">W</span>
-                      <span className="mono" title={address}>
-                        {shorten(address)}
-                      </span>
-                      <Tag variant="filled">已记录</Tag>
-                      <ArrowRightOutlined />
-                    </Link>
-                  ))}
-              </div>
-            ) : (
-              <Empty description="还没有矿工提交份额" />
-            )}
-          </Card>
         </>
       )}
       <p className="page-note">

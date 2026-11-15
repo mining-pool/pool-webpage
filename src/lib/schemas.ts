@@ -18,11 +18,18 @@ const rateFields = {
   hashrate6h: number,
   hashrate1d: number,
 };
-export const poolSchema = z.object({
-  ...rateFields,
-  coinName: z.string(),
-  miners: list(z.string()),
-});
+export const poolSchema = z
+  .object({
+    ...rateFields,
+    coinName: z.string(),
+    // The address list is only returned to administrators.
+    miners: list(z.string()),
+    minerCount: number.optional(),
+  })
+  .transform((pool) => ({
+    ...pool,
+    minerCount: pool.minerCount ?? pool.miners.length,
+  }));
 export const minerSchema = z.object({
   ...rateFields,
   name: z.string(),

@@ -32,7 +32,7 @@ import { formatRate, validAddress } from "../lib/format";
 import { useMetadata, usePayments } from "../lib/queries";
 
 function MinerPayments({ address }: { address: string }) {
-  const payments = usePayments();
+  const payments = usePayments(false, address);
   const meta = useMetadata();
   return (
     <>

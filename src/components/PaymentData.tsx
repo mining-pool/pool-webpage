@@ -138,3 +138,50 @@ export function PaymentData({
     </div>
   );
 }
+
+export function BlocksTable({
+  data,
+  symbol = "",
+}: {
+  data: Payments;
+  symbol?: string;
+}) {
+  return (
+    <Table
+      rowKey="hash"
+      pagination={{ pageSize: 5, hideOnSinglePage: true }}
+      scroll={{ x: 540 }}
+      locale={{ emptyText: "暂无已结算区块" }}
+      dataSource={[...data.blocks].reverse()}
+      columns={[
+        {
+          title: "高度",
+          dataIndex: "height",
+          render: (value: number) => value.toLocaleString(),
+        },
+        {
+          title: "区块哈希",
+          dataIndex: "hash",
+          render: (hash: string) => (
+            <Typography.Text
+              className="mono"
+              copyable={{ text: hash }}
+              title={hash}
+            >
+              {shorten(hash)}
+            </Typography.Text>
+          ),
+        },
+        {
+          title: "奖励",
+          dataIndex: "reward",
+          render: (value: string) => (
+            <span className="mono">
+              {formatUnits(value, data.decimals)} {symbol}
+            </span>
+          ),
+        },
+      ]}
+    />
+  );
+}
