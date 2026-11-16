@@ -1,0 +1,101 @@
+// @vitest-environment jsdom
+import "../test/setup";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { Route, useParams } from "react-router-dom";
+import { Shell } from "./Shell";
+import { rememberAddress } from "../lib/recent";
+import { renderApp, stubApi } from "../test/render";
+
+function MinerProbe() {
+  return <p>miner:{useParams().address}</p>;
+}
+
+const routes = (
+  <Route element={<Shell />}>
+    <Route index element={<p>home</p>} />
+    <Route path="miner/:address" element={<MinerProbe />} />
+  </Route>
+);
+
+const pool = {
+  hashrateUnit: "H/s",
+  hashrate1min: 12_345_678,
+  hashrate30min: 1,
+  hashrate1h: 1,
+  hashrate6h: 1,
+  hashrate1d: 1,
+  coinName: "Quantus",
+  minerCount: 3,
+};
+
+describe("Shell", () => {
+  beforeEach(() => {
+    stubApi({ "/api/pool": pool });
+  });
+
+  it("looks up a miner from the top search, encoding the address", async () => {
+    renderApp(routes);
+    const input = screen.getByLabelText("Wallet address");
+    fireEvent.change(input, { target: { value: "  kaspa:qabc  " } });
+    fireEvent.submit(input.closest("form")!);
+    expect(await screen.findByText("miner:kaspa:qabc")).toBeTruthy();
+    expect(screen.getByTestId("location").textContent).toBe(
+      "/miner/kaspa%3Aqabc",
+    );
+    expect((input as HTMLInputElement).value).toBe("");
+  });
+
+  it("rejects invalid addresses without navigating", () => {
+    renderApp(routes);
+    const input = screen.getByLabelText("Wallet address");
+    fireEvent.change(input, { target: { value: "wallet/../admin" } });
+    fireEvent.submit(input.closest("form")!);
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByTestId("location").textContent).toBe("/");
+  });
+
+  it("focuses the search with Ctrl+K", () => {
+    renderApp(routes);
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    expect(document.activeElement).toBe(
+      screen.getByLabelText("Wallet address"),
+    );
+  });
+
+  it("toggles and persists the colour theme", async () => {
+    renderApp(routes);
+    await waitFor(() =>
+      expect(document.documentElement.dataset.theme).toBe("dark"),
+    );
+    fireEvent.click(screen.getByLabelText("Toggle colour theme"));
+    await waitFor(() =>
+      expect(document.documentElement.dataset.theme).toBe("light"),
+    );
+    expect(localStorage.getItem("nomp:theme")).toBe("light");
+  });
+
+  it("lists only addresses this browser chose to remember", () => {
+    renderApp(routes);
+    expect(screen.queryByText("Recent lookups")).toBeNull();
+    act(() => {
+      rememberAddress("qtc1remembered");
+    });
+    expect(screen.getByText("Recent lookups")).toBeTruthy();
+    expect(screen.getByTitle("qtc1remembered")).toBeTruthy();
+  });
+
+  it("shows live pool status in the status bar", async () => {
+    renderApp(routes);
+    expect(await screen.findByText("Live")).toBeTruthy();
+    expect(screen.getByText("12.3 MH/s")).toBeTruthy();
+  });
+
+  it("does not render workbench chrome such as editor tabs", () => {
+    renderApp(routes);
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(
+      screen.getByRole("navigation", { name: "Main navigation" }),
+    ).toBeTruthy();
+  });
+});

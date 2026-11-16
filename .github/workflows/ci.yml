@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      backend_ref:
+        description: not-only-mining-pool ref for the end-to-end tests
+        default: master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+
+  # The production build against the real Go API (api package, Redis storage,
+  # admin sessions, CORS, privacy rules) on a separate origin, under the
+  # production CSP.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: mining-pool/not-only-mining-pool
+          ref: ${{ inputs.backend_ref || 'master' }}
+          path: backend
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+        env:
+          NOMP_REPO: backend
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t pool-webpage:ci .
+      - name: Smoke test the image
+        run: |
+          set -eu
+          docker run -d --name web -p 8080:8080 \
+            -e NOMP_API_BASE_URL=https://api.pool.example:20000 \
+            -e NOMP_POOL_NAME="CI Pool" \
+            -e NOMP_STRATUM_HOST=stratum.pool.example \
+            pool-webpage:ci
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/healthz && break; sleep 1; done
+          headers=$(curl -fsSI http://127.0.0.1:8080/miner/qtc1abc)
+          echo "$headers"
+          echo "$headers" | grep -qi "content-security-policy: .*connect-src 'self' https://api.pool.example:20000"
+          echo "$headers" | grep -qi "x-content-type-options: nosniff"
+          echo "$headers" | grep -qi "cache-control: no-cache"
+          curl -fsS http://127.0.0.1:8080/miner/qtc1abc | grep -q '<div id="root">'
+          curl -fsS http://127.0.0.1:8080/config.js | tee /dev/stderr | grep -q 'apiBaseUrl:"https://api.pool.example:20000",poolName:"CI Pool",stratumHost:"stratum.pool.example"'
+          asset=$(curl -fsS http://127.0.0.1:8080/ | grep -o '/assets/[^"]*\.js' | head -1)
+          curl -fsSI "http://127.0.0.1:8080$asset" | grep -qi "cache-control: public, max-age=31536000, immutable"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/assets/missing.js)" = 404
+          docker rm -f web
+      - name: Reject unsafe runtime config
+        run: |
+          set -u
+          # Each must fail fast in the entrypoint (exit 1), not start serving
+          # (which timeout would report as 124).
+          for setting in \
+            'NOMP_API_BASE_URL=https://api.pool.example/path' \
+            'NOMP_API_BASE_URL=javascript:alert(1)' \
+            'NOMP_POOL_NAME=Bad"Pool' \
+            'NOMP_POOL_NAME=$(id)' \
+            'NOMP_STRATUM_HOST=evil.example/x'; do
+            code=0
+            timeout 20 docker run --rm -e "$setting" pool-webpage:ci >/dev/null 2>&1 || code=$?
+            if [ "$code" -eq 0 ] || [ "$code" -eq 124 ]; then
+              echo "container accepted $setting (exit $code)" >&2
+              exit 1
+            fi
+            echo "rejected $setting (exit $code)"
+          done

@@ -1,0 +1,41 @@
+# Static hosting for the pool webpage. Rendered by the nginx image's envsubst
+# step; only variables defined in the environment (NOMP_*) are substituted.
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+    server_tokens off;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Runtime settings, validated by 15-nomp-config.sh before rendering.
+    location = /config.js {
+        include /etc/nginx/conf.d/security-headers.inc;
+        add_header Cache-Control "no-store" always;
+        default_type application/javascript;
+        return 200 'window.NOMP_CONFIG={apiBaseUrl:"${NOMP_API_BASE_URL}",poolName:"${NOMP_POOL_NAME}",stratumHost:"${NOMP_STRATUM_HOST}"};\n';
+    }
+
+    # Content-hashed build output: cache forever.
+    location /assets/ {
+        include /etc/nginx/conf.d/security-headers.inc;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    # Everything else is the single-page app; always revalidate index.html so
+    # a deploy is picked up immediately.
+    location / {
+        include /etc/nginx/conf.d/security-headers.inc;
+        add_header Cache-Control "no-cache" always;
+        try_files $uri /index.html;
+    }
+}
