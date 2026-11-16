@@ -29,6 +29,8 @@ export class ApiError extends Error {
     public kind: ApiErrorKind,
     public status = 0,
     public code?: string,
+    /** Parsed error body, for endpoints that return details (e.g. reports). */
+    public detail?: unknown,
   ) {
     super(`${kind}${status ? ` (${status})` : ""}${code ? `: ${code}` : ""}`);
     this.name = "ApiError";

@@ -1041,3 +1041,51 @@ kbd {
 .reload-errors ul {
   color: var(--error);
 }
+
+/* Settings editor (VS Code-style JSON editing) */
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.code-editor {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  height: 480px;
+  margin-top: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--editor);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 19px;
+}
+.code-editor:focus-within {
+  border-color: var(--focus);
+}
+.code-gutter {
+  margin: 0;
+  padding: 8px 12px 8px 16px;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  color: var(--faint);
+  text-align: right;
+  user-select: none;
+  font: inherit;
+}
+.code-editor textarea {
+  padding: 8px 12px;
+  border: 0;
+  outline: 0;
+  resize: none;
+  overflow: auto;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  white-space: pre;
+  tab-size: 2;
+}
+
+/* Ant Design draws step markers as circles; keep them square. */
+.ant-steps-item-icon {
+  border-radius: 0 !important;
+}

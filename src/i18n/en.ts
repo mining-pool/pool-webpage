@@ -43,6 +43,10 @@ export const en = {
     session_limit: "Too many active sessions. Try again later.",
     csrf_invalid: "Session check failed. Refresh and try again.",
     reload_unavailable: "This server does not support configuration reload.",
+    settings_conflict:
+      "config.json changed on the server since it was loaded. Load the latest version and apply your change again.",
+    settings_invalid: "The settings are not valid.",
+    settings_unavailable: "The settings could not be read or written.",
   } as Record<string, string>,
   shell: {
     skip: "Skip to content",
@@ -323,6 +327,19 @@ export const en = {
     reloadChanges: "Changes",
     reloadErrors: "Errors",
     reloadDemo: "Not available with demo data.",
+    settingsTitle: "Edit configuration",
+    settingsHint:
+      "These are the settings that can change without a restart. Saving checks the whole configuration, backs up config.json, writes it and applies it; if anything is invalid, nothing is written. Every attempt is recorded in config.json.audit.log. Tab indents, Esc leaves the editor, Ctrl/⌘ S saves.",
+    settingsModified: "Modified",
+    settingsSave: "Save and apply",
+    settingsRevert: "Revert",
+    settingsNotInForce:
+      "config.json on the server has changes that are not running yet. Saving applies the whole file.",
+    settingsConflict:
+      "config.json changed on the server since you opened it. Load the latest version and apply your change again.",
+    settingsLoadLatest: "Load latest",
+    settingsRejected: "Not saved: the configuration was rejected",
+    settingsJsonError: (message: string) => `Invalid JSON: ${message}`,
     basics: "Basics",
     coin: "Coin",
     symbol: "Symbol",

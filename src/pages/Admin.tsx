@@ -23,6 +23,7 @@ import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { AdminAccess } from "../components/AdminAccess";
 import { BlocksTable } from "../components/PaymentData";
 import { ReloadCard } from "../components/ReloadCard";
+import { SettingsEditor } from "../components/SettingsEditor";
 import {
   Metric,
   PageTitle,
@@ -290,6 +291,7 @@ function Configuration() {
       />
       <div className="stack reload-section">
         <ReloadCard />
+        <SettingsEditor />
       </div>
       <QueryState query={meta} />
       {meta.data && (

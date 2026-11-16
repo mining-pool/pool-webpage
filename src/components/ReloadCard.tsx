@@ -7,7 +7,7 @@ import { formatTime } from "../lib/format";
 import { errorText, useT } from "../i18n";
 import { QueryState } from "./Common";
 
-function Report({ report }: { report: ReloadReport }) {
+export function Report({ report }: { report: ReloadReport }) {
   const t = useT();
   return (
     <div className="reload-report" data-testid="reload-report">
@@ -20,6 +20,7 @@ function Report({ report }: { report: ReloadReport }) {
             formatTime(Date.parse(report.at)),
             t.admin.reloadTriggers[report.trigger] ?? report.trigger,
           )}
+          {report.actor ? ` · ${report.actor}` : ""}
         </span>
       </div>
       {!!report.changes.length && (

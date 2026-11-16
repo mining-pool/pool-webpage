@@ -8,8 +8,9 @@ const alpha = "qtc1fixtureminer0alpha";
 const bravo = "qtc1fixtureminer1bravo";
 const charlie = "qtc1fixtureminer2charlie";
 
-// Every test fails on uncaught errors and CSP violations. Expected HTTP 401s
-// (no admin session yet, wrong password) are the only tolerated console errors.
+// Every test fails on uncaught errors and CSP violations. Expected API
+// statuses the tests provoke (401 no session / wrong password, 409 settings
+// conflict, 422 rejected settings) are the only tolerated console errors.
 const test = base.extend<{ problems: string[] }>({
   problems: [
     async ({ page }, use) => {
@@ -18,7 +19,7 @@ const test = base.extend<{ problems: string[] }>({
       page.on("console", (message) => {
         const text = message.text();
         if (message.type() !== "error") return;
-        if (/status of 401/.test(text)) return;
+        if (/status of (401|409|422)/.test(text)) return;
         problems.push(text);
       });
       await use(problems);
@@ -268,6 +269,79 @@ test("admin reloads the configuration from the server", async ({ page }) => {
     await expect(report).toContainText("Rejected");
     await expect(report).toContainText("coin");
     expect(await listening(5555)).toBe(true);
+  } finally {
+    await writeFile(fixtureConfig, original);
+  }
+});
+
+test("admin edits the configuration through the API", async ({ page }) => {
+  const original = await readFile(fixtureConfig, "utf8");
+  const editor = page.getByRole("textbox", { name: "Edit configuration" });
+  const save = page.getByRole("button", { name: "Save and apply" });
+  const edit = async (change: (s: Record<string, any>) => void) => {
+    const settings = JSON.parse(await editor.inputValue());
+    change(settings);
+    await editor.fill(JSON.stringify(settings, null, 2));
+  };
+  try {
+    await page.goto("/admin/config");
+    await page.getByLabel("Username").fill("operator");
+    await page.getByLabel("Password").fill(adminPassword);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(editor).toBeVisible();
+    await expect(save).toBeDisabled(); // nothing changed yet
+
+    await editor.fill("{ not json");
+    await expect(page.getByText(/^Invalid JSON/)).toBeVisible();
+    await expect(save).toBeDisabled();
+    await page.getByRole("button", { name: "Revert" }).click();
+
+    // Add a port through the editor: validated, written, applied.
+    await edit((s) => {
+      s.ports["5556"] = { protocol: "stratum", diff: 4 };
+    });
+    await expect(page.getByText("Modified")).toBeVisible();
+    await save.click();
+    const card = page.locator(".ant-card", { has: editor });
+    const report = card.getByTestId("reload-report");
+    await expect(report).toContainText("port 5556 added");
+    await expect(report).toContainText("operator@127.0.0.1");
+    expect(await listening(5556)).toBe(true);
+    const written = JSON.parse(await readFile(fixtureConfig, "utf8"));
+    expect(written.ports["5556"].diff).toBe(4);
+    expect(written.coin.name).toBe("Quantus"); // other settings untouched
+    expect(await readFile(`${fixtureConfig}.bak`, "utf8")).toBe(original);
+    expect(await readFile(`${fixtureConfig}.audit.log`, "utf8")).toContain(
+      '"actor":"operator@127.0.0.1"',
+    );
+    await expect(save).toBeDisabled();
+
+    // Someone edits config.json on the server meanwhile: no lost update.
+    const onDisk = JSON.parse(await readFile(fixtureConfig, "utf8"));
+    onDisk.connectionTimeout = 777;
+    await writeFile(fixtureConfig, JSON.stringify(onDisk));
+    await edit((s) => {
+      s.connectionTimeout = 900;
+    });
+    await save.click();
+    await expect(
+      page.getByText(/changed on the server since you opened it/),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Load latest" }).click();
+    await expect(editor).toHaveValue(/"connectionTimeout": 777/);
+
+    // An invalid configuration is rejected and nothing is written.
+    const before = await readFile(fixtureConfig, "utf8");
+    await edit((s) => {
+      s.ports = {};
+    });
+    await save.click();
+    await expect(
+      page.getByText("Not saved: the configuration was rejected"),
+    ).toBeVisible();
+    await expect(page.getByText(/at least one stratum port/)).toBeVisible();
+    expect(await readFile(fixtureConfig, "utf8")).toBe(before);
+    expect(await listening(5556)).toBe(true);
   } finally {
     await writeFile(fixtureConfig, original);
   }

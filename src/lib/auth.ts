@@ -30,13 +30,13 @@ export async function adminRequest<T>(
     throw new ApiError("authNetwork");
   }
   if (!response.ok) {
-    const data = z
-      .object({ code: z.string().max(64) })
-      .safeParse(await response.json().catch(() => null));
+    const body: unknown = await response.json().catch(() => null);
+    const data = z.object({ code: z.string().max(64) }).safeParse(body);
     throw new ApiError(
       "auth",
       response.status,
       data.success ? data.data.code : undefined,
+      body,
     );
   }
   try {
@@ -59,6 +59,7 @@ const list = z
 const reloadReport = z.object({
   at: z.string(),
   trigger: z.string(),
+  actor: z.string().optional(),
   ok: z.boolean(),
   changes: list,
   errors: list,
@@ -76,6 +77,38 @@ export const reload = {
       method: "POST",
       headers: { "X-CSRF-Token": csrfToken },
     }),
+};
+
+const settingsDocument = z.object({
+  version: z.string().min(1),
+  inForce: z.boolean(),
+  settings: z.record(z.string(), z.unknown()),
+});
+export type SettingsDocument = z.infer<typeof settingsDocument>;
+
+/** The reloadable part of config.json, edited through the admin API. */
+export const settingsApi = {
+  get: (signal?: AbortSignal) =>
+    adminRequest("/settings", settingsDocument, { signal }),
+  put: (version: string, settings: unknown, csrfToken: string) =>
+    adminRequest("/settings", reloadReport, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+      },
+      body: JSON.stringify({ version, settings }),
+    }),
+  /** A 422 carries the reload report explaining why nothing was applied. */
+  rejection: (error: unknown) =>
+    error instanceof ApiError && error.status === 422
+      ? reloadReport.safeParse(error.detail).data
+      : undefined,
+  /** A 400 carries the server's explanation (e.g. an unknown field). */
+  message: (error: unknown) =>
+    error instanceof ApiError
+      ? z.object({ message: z.string() }).safeParse(error.detail).data?.message
+      : undefined,
 };
 
 export const auth = {

@@ -39,6 +39,10 @@ export const zh: Messages = {
     session_limit: "会话数量已达上限，请稍后重试。",
     csrf_invalid: "会话校验失败，请刷新后重试。",
     reload_unavailable: "此服务器不支持配置重载。",
+    settings_conflict:
+      "加载后 config.json 已在服务器上被修改。请加载最新内容后重新修改。",
+    settings_invalid: "配置内容无效。",
+    settings_unavailable: "无法读取或写入配置。",
   },
   shell: {
     skip: "跳转到内容",
@@ -305,6 +309,19 @@ export const zh: Messages = {
     reloadChanges: "改动",
     reloadErrors: "错误",
     reloadDemo: "演示数据下不可用。",
+    settingsTitle: "编辑配置",
+    settingsHint:
+      "这里是无需重启即可修改的配置。保存时会校验整份配置、备份 config.json、写入并生效；任何一项无效都不会写入。每次修改尝试都会记录在 config.json.audit.log。Tab 缩进，Esc 离开编辑框，Ctrl/⌘ S 保存。",
+    settingsModified: "已修改",
+    settingsSave: "保存并生效",
+    settingsRevert: "撤销修改",
+    settingsNotInForce:
+      "服务器上的 config.json 有尚未生效的改动，保存时会让整个文件生效。",
+    settingsConflict:
+      "打开后 config.json 已在服务器上被修改。请加载最新内容后重新修改。",
+    settingsLoadLatest: "加载最新内容",
+    settingsRejected: "未保存：配置被拒绝",
+    settingsJsonError: (message) => `JSON 格式错误：${message}`,
     basics: "基本信息",
     coin: "币种",
     symbol: "符号",

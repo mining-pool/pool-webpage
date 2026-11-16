@@ -47,7 +47,7 @@ primary language, with Simplified Chinese available.
 | `/admin` | Operations overview: API health, payout errors, settled blocks |
 | `/admin/miners` | Miner index (admin only) with per-address details |
 | `/admin/payments` | Full payout ledger and pending transaction |
-| `/admin/config` | Coin, algorithm and port configuration; reload `config.json` without a restart |
+| `/admin/config` | Coin, algorithm and ports; reload `config.json` or edit the reloadable settings (written to the server and applied without a restart) |
 
 ## Quick start
 
