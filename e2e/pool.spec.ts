@@ -36,8 +36,20 @@ test("overview shows live pool stats without listing miners", async ({
   await expect(page.getByRole("status")).toHaveText("Live");
   await expect(page.locator(".metric-card").nth(2)).toContainText("3");
   await expect(page.locator(".info-list")).toContainText("Quantus");
-  // Real shares were written seconds ago, so the 1-minute rate is non-zero.
-  await expect(page.locator(".metric-value").first()).not.toHaveText(/^0\b/);
+  // 300M difficulty of shares (1 difficulty = 1 hash) over the 24 h window.
+  await expect(page.locator(".metric-value").nth(1)).toHaveText("3.47kH/s");
+  await expect(page.locator(".metric-value").first()).toHaveText(/H\/s$/);
+  await expect(page.locator("body")).not.toContainText("diff/s");
+  // Axis labels such as "4.5 MH/s" must not be clipped by the chart edge.
+  const chart = (await page.locator(".rate-chart svg").first().boundingBox())!;
+  const ticks = page.locator(
+    ".rate-chart .recharts-yAxis-tick-labels .recharts-cartesian-axis-tick-value",
+  );
+  await expect(ticks.first()).toBeVisible();
+  for (const box of await ticks.evaluateAll((els) =>
+    els.map((el) => el.getBoundingClientRect().left),
+  ))
+    expect(box).toBeGreaterThanOrEqual(chart.x);
   const html = await page.content();
   for (const miner of [alpha, bravo, charlie])
     expect(html).not.toContain(miner);
@@ -52,6 +64,9 @@ test("miner lookup shows rigs and contribution", async ({ page }) => {
   await expect(page.getByRole("button", { name: "rig-a1" })).toBeVisible();
   await expect(page.getByRole("button", { name: "rig-a2" })).toBeVisible();
   await expect(page.getByText("2 recorded")).toBeVisible();
+  // 180M difficulty over 24 h for this miner.
+  await expect(page.locator(".metric-value").nth(1)).toHaveText("2.08kH/s");
+  await expect(page.locator("body")).not.toContainText("diff/s");
   await expect(
     page.getByText("Shares in the last minute").first(),
   ).toBeVisible();

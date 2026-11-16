@@ -30,7 +30,12 @@ import {
   Refresh,
 } from "../components/Common";
 import { api } from "../lib/api";
-import { formatNumber, formatRate, minerPath } from "../lib/format";
+import {
+  formatDifficulty,
+  formatNumber,
+  hashrateParts,
+  minerPath,
+} from "../lib/format";
 import { useMetadata, usePayments, usePool } from "../lib/queries";
 import { site } from "../lib/config";
 import { useT } from "../i18n";
@@ -53,8 +58,7 @@ function Operations() {
       <div className="metrics-grid">
         <Metric
           label={t.admin.rate1m}
-          value={formatRate(pool.data?.hashrate1min)}
-          unit="diff/s"
+          {...hashrateParts(pool.data?.hashrate1min, pool.data?.hashrateUnit)}
           note={t.admin.rateNote}
           icon={<ThunderboltOutlined />}
         />
@@ -253,7 +257,7 @@ function Miners() {
                 {
                   key: "round",
                   label: t.admin.round,
-                  children: `${formatRate(detail.data.roundContrib)} diff`,
+                  children: `${formatDifficulty(detail.data.roundContrib)} diff`,
                 },
               ]}
             />

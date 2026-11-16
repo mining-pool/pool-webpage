@@ -1,7 +1,7 @@
 import { Tooltip } from "antd";
 import { SyncOutlined } from "@ant-design/icons";
 import { site } from "../lib/config";
-import { formatRate, formatTime } from "../lib/format";
+import { formatHashrate, formatTime } from "../lib/format";
 import { useT } from "../i18n";
 import { useMetadata, usePool } from "../lib/queries";
 
@@ -33,7 +33,7 @@ export function StatusBar() {
         {pool.data && (
           <Tooltip title={t.status.rateHint}>
             <span className="status-item">
-              {formatRate(pool.data.hashrate1min)} diff/s
+              {formatHashrate(pool.data.hashrate1min, pool.data.hashrateUnit)}
             </span>
           </Tooltip>
         )}

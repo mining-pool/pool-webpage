@@ -28,7 +28,12 @@ import {
 } from "../components/Common";
 import { PaymentData } from "../components/PaymentData";
 import { api } from "../lib/api";
-import { formatRate, validAddress } from "../lib/format";
+import {
+  formatDifficulty,
+  formatHashrate,
+  hashrateParts,
+  validAddress,
+} from "../lib/format";
 import { useT } from "../i18n";
 import { useMetadata, usePayments } from "../lib/queries";
 
@@ -126,11 +131,16 @@ function Workers({ address, rigs }: { address: string; rigs: string[] }) {
           },
           {
             title: t.miner.rate1mCol,
-            render: (_, { query }) => formatRate(query.data?.hashrate1min),
+            render: (_, { query }) =>
+              formatHashrate(
+                query.data?.hashrate1min,
+                query.data?.hashrateUnit,
+              ),
           },
           {
             title: t.miner.rate1dCol,
-            render: (_, { query }) => formatRate(query.data?.hashrate1d),
+            render: (_, { query }) =>
+              formatHashrate(query.data?.hashrate1d, query.data?.hashrateUnit),
           },
         ]}
       />
@@ -200,15 +210,19 @@ export default function MinerPage() {
               <div className="metrics-grid">
                 <Metric
                   label={t.miner.rate1m}
-                  value={formatRate(miner.data.hashrate1min)}
-                  unit="diff/s"
+                  {...hashrateParts(
+                    miner.data.hashrate1min,
+                    miner.data.hashrateUnit,
+                  )}
                   note={t.overview.rateShort}
                   icon={<ThunderboltOutlined />}
                 />
                 <Metric
                   label={t.miner.rate1d}
-                  value={formatRate(miner.data.hashrate1d)}
-                  unit="diff/s"
+                  {...hashrateParts(
+                    miner.data.hashrate1d,
+                    miner.data.hashrateUnit,
+                  )}
                   note={t.overview.rateLong}
                   icon={<ClockCircleOutlined />}
                 />
@@ -221,7 +235,7 @@ export default function MinerPage() {
                 />
                 <Metric
                   label={t.miner.round}
-                  value={formatRate(miner.data.roundContrib)}
+                  value={formatDifficulty(miner.data.roundContrib)}
                   unit="diff"
                   note={t.miner.roundNote}
                   icon={<DatabaseOutlined />}

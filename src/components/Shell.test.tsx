@@ -19,7 +19,8 @@ const routes = (
 );
 
 const pool = {
-  hashrate1min: 12,
+  hashrateUnit: "H/s",
+  hashrate1min: 12_345_678,
   hashrate30min: 1,
   hashrate1h: 1,
   hashrate6h: 1,
@@ -87,7 +88,7 @@ describe("Shell", () => {
   it("shows live pool status in the status bar", async () => {
     renderApp(routes);
     expect(await screen.findByText("Live")).toBeTruthy();
-    expect(screen.getByText("12 diff/s")).toBeTruthy();
+    expect(screen.getByText("12.3 MH/s")).toBeTruthy();
   });
 
   it("does not render workbench chrome such as editor tabs", () => {

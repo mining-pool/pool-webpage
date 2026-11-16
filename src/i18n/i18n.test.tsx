@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Route } from "react-router-dom";
 import { Shell } from "../components/Shell";
 import { ApiError } from "../lib/api";
-import { formatRate } from "../lib/format";
+import { formatDifficulty, formatHashrate } from "../lib/format";
 import { renderApp, stubApi } from "../test/render";
 import { en } from "./en";
 import { zh } from "./zh";
@@ -48,7 +48,8 @@ describe("languages", () => {
     expect(screen.getByLabelText("钱包地址")).toBeTruthy();
     expect(document.documentElement.lang).toBe("zh-CN");
     expect(localStorage.getItem("nomp:lang")).toBe("zh");
-    expect(formatRate(123456)).toBe("12.346万");
+    expect(formatDifficulty(123456)).toBe("12.346万");
+    expect(formatHashrate(1.5e12, "H/s")).toBe("1.5 TH/s");
   });
 
   it("localises API error codes, falling back to the status", () => {

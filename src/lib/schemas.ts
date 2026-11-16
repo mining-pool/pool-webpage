@@ -12,6 +12,8 @@ const map = <T extends z.ZodType>(item: T) =>
     .transform((v) => v ?? {});
 const number = z.number().finite().nonnegative();
 const rateFields = {
+  // "H/s" or "Sol/s"; older APIs sent difficulty per second with no unit.
+  hashrateUnit: z.string().max(16).default("diff/s"),
   hashrate1min: number,
   hashrate30min: number,
   hashrate1h: number,

@@ -1,11 +1,12 @@
 // Opt-in preview fixtures only. Never used as fallback for live requests.
 export const demoAddress = "qtc1nomp7m4x2demo8wallet9address5k6v3";
 const rates = {
-  hashrate1min: 1842.36,
-  hashrate30min: 1791.82,
-  hashrate1h: 1816.24,
-  hashrate6h: 1750.61,
-  hashrate1d: 1682.47,
+  hashrateUnit: "H/s",
+  hashrate1min: 1.84236e12,
+  hashrate30min: 1.79182e12,
+  hashrate1h: 1.81624e12,
+  hashrate6h: 1.75061e12,
+  hashrate1d: 1.68247e12,
 };
 const miners = [
   demoAddress,
@@ -15,7 +16,12 @@ const miners = [
   ),
 ];
 const scale = (n: number) =>
-  Object.fromEntries(Object.entries(rates).map(([k, v]) => [k, v / n]));
+  Object.fromEntries(
+    Object.entries(rates).map(([k, v]) => [
+      k,
+      typeof v === "number" ? v / n : v,
+    ]),
+  );
 type Output = { address: string; amount: string };
 
 const ledger = {

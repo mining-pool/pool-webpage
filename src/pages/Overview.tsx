@@ -16,7 +16,7 @@ import {
   Refresh,
 } from "../components/Common";
 import { useMetadata, usePool } from "../lib/queries";
-import { formatNumber, formatRate } from "../lib/format";
+import { formatNumber, hashrateParts } from "../lib/format";
 import { useT } from "../i18n";
 
 export default function Overview() {
@@ -42,15 +42,13 @@ export default function Overview() {
           <div className="metrics-grid">
             <Metric
               label={t.overview.rate1m}
-              value={formatRate(pool.data.hashrate1min)}
-              unit="diff/s"
+              {...hashrateParts(pool.data.hashrate1min, pool.data.hashrateUnit)}
               note={t.overview.rateShort}
               icon={<ThunderboltOutlined />}
             />
             <Metric
               label={t.overview.rate1d}
-              value={formatRate(pool.data.hashrate1d)}
-              unit="diff/s"
+              {...hashrateParts(pool.data.hashrate1d, pool.data.hashrateUnit)}
               note={t.overview.rateLong}
               icon={<ClockCircleOutlined />}
             />

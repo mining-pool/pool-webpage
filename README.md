@@ -170,8 +170,10 @@ Details: [HTTP API guide](https://github.com/mining-pool/not-only-mining-pool/bl
 
 ## Data conventions
 
-- Work rates are the API's accepted share difficulty per second (`diff/s`),
-  not device H/s, shown per window (1 min – 24 h) rather than as a time series.
+- Hashrates (H/s, or Sol/s for Equihash-family coins) are estimated by the
+  API from accepted shares and shown with SI prefixes (kH/s … EH/s) per window
+  (1 min – 24 h), not as a time series. They can differ from what a miner
+  reports locally. See the API guide for the per-engine conversion.
 - API responses are validated (Zod). Requests time out after 12 s; stats
   refresh every 30 s, payouts every 60 s, and polling pauses in hidden tabs.
   Failures keep the last good data and show when it was fetched.

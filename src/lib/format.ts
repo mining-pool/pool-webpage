@@ -1,6 +1,35 @@
 import { currentLocale } from "../i18n";
 
-export function formatRate(value: number | undefined) {
+const prefixes = ["", "k", "M", "G", "T", "P", "E", "Z"];
+
+/** Hashrate split into number and SI-prefixed unit, e.g. 1.23 / "MH/s". */
+export function hashrateParts(
+  value: number | undefined,
+  unit = "H/s",
+): { value: string; unit: string } {
+  if (value === undefined || !Number.isFinite(value) || value < 0)
+    return { value: "—", unit };
+  let scaled = value;
+  let i = 0;
+  while (scaled >= 1000 && i < prefixes.length - 1) {
+    scaled /= 1000;
+    i++;
+  }
+  return {
+    value: new Intl.NumberFormat(currentLocale(), {
+      maximumFractionDigits: scaled < 10 ? 2 : scaled < 100 ? 1 : 0,
+    }).format(scaled),
+    unit: `${prefixes[i]}${unit}`,
+  };
+}
+
+export function formatHashrate(value: number | undefined, unit = "H/s") {
+  const parts = hashrateParts(value, unit);
+  return parts.value === "—" ? "—" : `${parts.value} ${parts.unit}`;
+}
+
+/** Share difficulty (not a rate), compact for large values. */
+export function formatDifficulty(value: number | undefined) {
   if (value === undefined || !Number.isFinite(value)) return "—";
   return new Intl.NumberFormat(currentLocale(), {
     maximumFractionDigits: 3,

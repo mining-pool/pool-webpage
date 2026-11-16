@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatRate, formatTime } from "../lib/format";
+import { formatHashrate, formatTime } from "../lib/format";
 import { errorText, useT } from "../i18n";
 import { useTheme } from "../lib/theme";
 
@@ -125,6 +125,7 @@ export function Metric({
   );
 }
 type RateData = {
+  hashrateUnit: string;
   hashrate1min: number;
   hashrate30min: number;
   hashrate1h: number;
@@ -144,7 +145,7 @@ export function RateChart({ data }: { data: RateData }) {
   return (
     <Card
       title={t.rates.chartTitle}
-      extra={<Tag variant="filled">diff/s</Tag>}
+      extra={<Tag variant="filled">{data.hashrateUnit}</Tag>}
       className="chart-card"
     >
       <p className="card-subtitle">{t.rates.chartSubtitle}</p>
@@ -152,7 +153,9 @@ export function RateChart({ data }: { data: RateData }) {
         className="rate-chart"
         role="img"
         aria-label={windows
-          .map((v) => `${v.label}: ${formatRate(v.rate)} diff/s`)
+          .map(
+            (v) => `${v.label}: ${formatHashrate(v.rate, data.hashrateUnit)}`,
+          )
           .join("; ")}
       >
         <ResponsiveContainer
@@ -164,7 +167,7 @@ export function RateChart({ data }: { data: RateData }) {
           <BarChart
             data={windows}
             barSize={36}
-            margin={{ left: -12, right: 12, top: 18 }}
+            margin={{ left: 0, right: 12, top: 18 }}
           >
             <CartesianGrid
               vertical={false}
@@ -179,9 +182,12 @@ export function RateChart({ data }: { data: RateData }) {
               dy={8}
             />
             <YAxis
+              width={76}
               axisLine={false}
               tickLine={false}
-              tickFormatter={formatRate}
+              tickFormatter={(value: number) =>
+                formatHashrate(value, data.hashrateUnit)
+              }
               tick={{ fill: colors.muted, fontSize: 11 }}
             />
             <Tooltip
@@ -194,7 +200,7 @@ export function RateChart({ data }: { data: RateData }) {
               }}
               labelStyle={{ color: colors.text }}
               formatter={(value) => [
-                `${formatRate(Number(value))} diff/s`,
+                formatHashrate(Number(value), data.hashrateUnit),
                 t.rates.tooltip,
               ]}
             />
