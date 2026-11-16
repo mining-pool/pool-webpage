@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Routes, useLocation } from "react-router-dom";
 import { vi } from "vitest";
 import { ThemeProvider } from "../lib/theme";
+import { LanguageProvider } from "../i18n";
 
 /** Renders the current location so tests can assert navigation. */
 export function Location() {
@@ -17,16 +18,18 @@ export function renderApp(routes: ReactNode, path = "/") {
     defaultOptions: { queries: { retry: false } },
   });
   return render(
-    <ThemeProvider>
-      <AntApp>
-        <QueryClientProvider client={client}>
-          <MemoryRouter initialEntries={[path]}>
-            <Routes>{routes}</Routes>
-            <Location />
-          </MemoryRouter>
-        </QueryClientProvider>
-      </AntApp>
-    </ThemeProvider>,
+    <LanguageProvider>
+      <ThemeProvider>
+        <AntApp>
+          <QueryClientProvider client={client}>
+            <MemoryRouter initialEntries={[path]}>
+              <Routes>{routes}</Routes>
+              <Location />
+            </MemoryRouter>
+          </QueryClientProvider>
+        </AntApp>
+      </ThemeProvider>
+    </LanguageProvider>,
   );
 }
 

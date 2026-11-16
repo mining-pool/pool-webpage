@@ -43,7 +43,7 @@ describe("miner privacy", () => {
       },
     });
     const { container } = renderApp(<Route index element={<Overview />} />);
-    expect(await screen.findByText("累计矿工")).toBeTruthy();
+    expect(await screen.findByText("Miners")).toBeTruthy();
     expect(container.textContent).not.toContain("qtc1secretminer");
   });
 
@@ -65,10 +65,10 @@ describe("miner privacy", () => {
       },
     });
     renderApp(<Route index element={<Payments />} />);
-    expect(await screen.findByText("最近结算区块")).toBeTruthy();
-    expect(screen.queryByText("收款矿工")).toBeNull();
+    expect(await screen.findByText("Recent settled blocks")).toBeTruthy();
+    expect(screen.queryByText("Recipient")).toBeNull();
 
-    const input = screen.getByLabelText("收款地址");
+    const input = screen.getByLabelText("Payout address");
     fireEvent.change(input, { target: { value: "qtc1me+x" } });
     fireEvent.keyDown(input, { key: "Enter", code: "Enter", keyCode: 13 });
     await waitFor(() =>
@@ -76,7 +76,7 @@ describe("miner privacy", () => {
         "/api/payments?address=qtc1me%2Bx",
       ),
     );
-    expect(await screen.findByText("待结算余额")).toBeTruthy();
+    expect(await screen.findByText("Unpaid balance")).toBeTruthy();
     expect(screen.getByText("2")).toBeTruthy();
   });
 

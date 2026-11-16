@@ -88,16 +88,16 @@ describe("NOMP API adapter", () => {
       .mockResolvedValueOnce(new Response("<html>not an API</html>"));
     vi.stubGlobal("fetch", fetcher);
     await expect(api.pool(true)).rejects.toMatchObject({ status: 401 });
-    await expect(api.pool(false)).rejects.toThrow("数据格式");
+    await expect(api.pool(false)).rejects.toMatchObject({ kind: "format" });
   });
   it("does not substitute preview data after network failure", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockRejectedValue(new TypeError("Network failure")),
     );
-    await expect(request("/pool", poolSchema)).rejects.toThrow(
-      "暂时无法连接矿池",
-    );
+    await expect(request("/pool", poolSchema)).rejects.toMatchObject({
+      kind: "network",
+    });
   });
   it("preserves cancellation", async () => {
     const controller = new AbortController();

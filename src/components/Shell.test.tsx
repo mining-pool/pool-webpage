@@ -35,7 +35,7 @@ describe("Shell", () => {
 
   it("looks up a miner from the top search, encoding the address", async () => {
     renderApp(routes);
-    const input = screen.getByLabelText("钱包地址");
+    const input = screen.getByLabelText("Wallet address");
     fireEvent.change(input, { target: { value: "  kaspa:qabc  " } });
     fireEvent.submit(input.closest("form")!);
     expect(await screen.findByText("miner:kaspa:qabc")).toBeTruthy();
@@ -47,7 +47,7 @@ describe("Shell", () => {
 
   it("rejects invalid addresses without navigating", () => {
     renderApp(routes);
-    const input = screen.getByLabelText("钱包地址");
+    const input = screen.getByLabelText("Wallet address");
     fireEvent.change(input, { target: { value: "wallet/../admin" } });
     fireEvent.submit(input.closest("form")!);
     expect(input.getAttribute("aria-invalid")).toBe("true");
@@ -57,7 +57,9 @@ describe("Shell", () => {
   it("focuses the search with Ctrl+K", () => {
     renderApp(routes);
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
-    expect(document.activeElement).toBe(screen.getByLabelText("钱包地址"));
+    expect(document.activeElement).toBe(
+      screen.getByLabelText("Wallet address"),
+    );
   });
 
   it("toggles and persists the colour theme", async () => {
@@ -65,7 +67,7 @@ describe("Shell", () => {
     await waitFor(() =>
       expect(document.documentElement.dataset.theme).toBe("dark"),
     );
-    fireEvent.click(screen.getByLabelText("切换颜色主题"));
+    fireEvent.click(screen.getByLabelText("Toggle colour theme"));
     await waitFor(() =>
       expect(document.documentElement.dataset.theme).toBe("light"),
     );
@@ -74,23 +76,25 @@ describe("Shell", () => {
 
   it("lists only addresses this browser chose to remember", () => {
     renderApp(routes);
-    expect(screen.queryByText("最近查询")).toBeNull();
+    expect(screen.queryByText("Recent lookups")).toBeNull();
     act(() => {
       rememberAddress("qtc1remembered");
     });
-    expect(screen.getByText("最近查询")).toBeTruthy();
+    expect(screen.getByText("Recent lookups")).toBeTruthy();
     expect(screen.getByTitle("qtc1remembered")).toBeTruthy();
   });
 
   it("shows live pool status in the status bar", async () => {
     renderApp(routes);
-    expect(await screen.findByText("实时接口")).toBeTruthy();
+    expect(await screen.findByText("Live")).toBeTruthy();
     expect(screen.getByText("12 diff/s")).toBeTruthy();
   });
 
   it("does not render workbench chrome such as editor tabs", () => {
     renderApp(routes);
     expect(screen.queryByRole("tablist")).toBeNull();
-    expect(screen.getByRole("navigation", { name: "主导航" })).toBeTruthy();
+    expect(
+      screen.getByRole("navigation", { name: "Main navigation" }),
+    ).toBeTruthy();
   });
 });

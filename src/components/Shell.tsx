@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Tooltip } from "antd";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { Spin, Tooltip } from "antd";
 import {
   ApiOutlined,
   DashboardOutlined,
+  GlobalOutlined,
   DesktopOutlined,
   MenuOutlined,
   MoonOutlined,
@@ -18,31 +19,38 @@ import { site } from "../lib/config";
 import { minerPath, shorten, validAddress } from "../lib/format";
 import { useRecentAddresses } from "../lib/recent";
 import { useTheme } from "../lib/theme";
+import { languages, useLanguage, useT, type Lang } from "../i18n";
+import type { Messages } from "../i18n/en";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { StatusBar } from "./StatusBar";
 
-type Item = { path: string; label: string; icon: ReactNode };
+type Item = { path: string; label: keyof Messages["nav"]; icon: ReactNode };
 
-const groups: { title: string; items: Item[] }[] = [
+const groups: { title: "pool" | "admin"; items: Item[] }[] = [
   {
-    title: "矿池",
+    title: "pool",
     items: [
-      { path: "/", label: "矿池概览", icon: <DashboardOutlined /> },
-      { path: "/miner", label: "我的矿机", icon: <DesktopOutlined /> },
-      { path: "/payments", label: "支付记录", icon: <WalletOutlined /> },
-      { path: "/connect", label: "开始挖矿", icon: <ApiOutlined /> },
+      { path: "/", label: "overview", icon: <DashboardOutlined /> },
+      { path: "/miner", label: "miner", icon: <DesktopOutlined /> },
+      { path: "/payments", label: "payments", icon: <WalletOutlined /> },
+      { path: "/connect", label: "connect", icon: <ApiOutlined /> },
     ],
   },
   {
-    title: "管理",
+    title: "admin",
     items: [
       {
         path: "/admin",
-        label: "运行概览",
+        label: "operations",
         icon: <SafetyCertificateOutlined />,
       },
-      { path: "/admin/miners", label: "矿工管理", icon: <TeamOutlined /> },
-      { path: "/admin/payments", label: "支付监控", icon: <WalletOutlined /> },
-      { path: "/admin/config", label: "矿池配置", icon: <SettingOutlined /> },
+      { path: "/admin/miners", label: "miners", icon: <TeamOutlined /> },
+      {
+        path: "/admin/payments",
+        label: "paymentMonitor",
+        icon: <WalletOutlined />,
+      },
+      { path: "/admin/config", label: "config", icon: <SettingOutlined /> },
     ],
   },
 ];
@@ -51,7 +59,28 @@ const mac =
   typeof navigator !== "undefined" &&
   /Mac|iP(hone|ad)/.test(navigator.platform);
 
+function LanguageSelect() {
+  const { lang, setLang, t } = useLanguage();
+  return (
+    <label className="lang-select" title={t.shell.language}>
+      <GlobalOutlined aria-hidden="true" />
+      <select
+        aria-label={t.shell.language}
+        value={lang}
+        onChange={(e) => setLang(e.target.value as Lang)}
+      >
+        {(Object.keys(languages) as Lang[]).map((code) => (
+          <option key={code} value={code}>
+            {languages[code].messages.meta.language}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function TopSearch() {
+  const t = useT();
   const navigate = useNavigate();
   const input = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
@@ -90,8 +119,8 @@ function TopSearch() {
           setValue(e.target.value);
           setInvalid(false);
         }}
-        placeholder="输入钱包地址查询矿工"
-        aria-label="钱包地址"
+        placeholder={t.shell.searchPlaceholder}
+        aria-label={t.shell.searchLabel}
         aria-invalid={invalid}
         spellCheck={false}
         autoComplete="off"
@@ -105,6 +134,7 @@ function TopSearch() {
 export function Shell() {
   const { pathname } = useLocation();
   const { mode, toggle } = useTheme();
+  const t = useT();
   const recent = useRecentAddresses();
   const [menu, setMenu] = useState(false);
   const close = () => setMenu(false);
@@ -113,19 +143,24 @@ export function Shell() {
     const item = groups
       .flatMap((g) => g.items)
       .find((i) => i.path === (pathname.replace(/\/+$/, "") || "/"));
-    document.title = `${item?.label ?? (pathname.startsWith("/miner/") ? "矿工" : "NOMP")} · ${site.name}`;
-  }, [pathname]);
+    const title = item
+      ? t.nav[item.label]
+      : pathname.startsWith("/miner/")
+        ? t.shell.minerTitle
+        : "";
+    document.title = title ? `${title} · ${site.name}` : site.name;
+  }, [pathname, t]);
 
   return (
     <div className="app">
       <a className="skip-link" href="#main">
-        跳转到内容
+        {t.shell.skip}
       </a>
       <header className="topbar">
         <button
           type="button"
           className="icon-button menu-button"
-          aria-label="打开导航"
+          aria-label={t.shell.openNav}
           aria-expanded={menu}
           onClick={() => setMenu(!menu)}
         >
@@ -138,11 +173,14 @@ export function Shell() {
           <span className="brand-name">{site.name}</span>
         </NavLink>
         <TopSearch />
-        <Tooltip title={mode === "dark" ? "切换到浅色" : "切换到深色"}>
+        <LanguageSelect />
+        <Tooltip
+          title={mode === "dark" ? t.shell.themeLight : t.shell.themeDark}
+        >
           <button
             type="button"
             className="icon-button"
-            aria-label="切换颜色主题"
+            aria-label={t.shell.themeToggle}
             onClick={toggle}
           >
             {mode === "dark" ? <SunOutlined /> : <MoonOutlined />}
@@ -152,10 +190,10 @@ export function Shell() {
 
       <div className="body">
         <aside className={`sidebar ${menu ? "open" : ""}`}>
-          <nav aria-label="主导航">
+          <nav aria-label={t.shell.mainNav}>
             {groups.map((group) => (
               <div key={group.title} className="nav-group">
-                <div className="nav-title">{group.title}</div>
+                <div className="nav-title">{t.shell[group.title]}</div>
                 {group.items.map((item) => (
                   <NavLink
                     key={item.path}
@@ -167,14 +205,14 @@ export function Shell() {
                     }
                   >
                     {item.icon}
-                    <span>{item.label}</span>
+                    <span>{t.nav[item.label]}</span>
                   </NavLink>
                 ))}
               </div>
             ))}
             {!!recent.length && (
               <div className="nav-group">
-                <div className="nav-title">最近查询</div>
+                <div className="nav-title">{t.shell.recent}</div>
                 {recent.map((address) => (
                   <NavLink
                     key={address}
@@ -195,7 +233,11 @@ export function Shell() {
         {menu && <div className="scrim" aria-hidden="true" onClick={close} />}
         <main id="main" className="main" tabIndex={-1}>
           <div className="content">
-            <Outlet />
+            <ErrorBoundary resetKey={pathname}>
+              <Suspense fallback={<Spin className="page-spin" />}>
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>

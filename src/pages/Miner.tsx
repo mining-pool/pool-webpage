@@ -29,6 +29,7 @@ import {
 import { PaymentData } from "../components/PaymentData";
 import { api } from "../lib/api";
 import { formatRate, validAddress } from "../lib/format";
+import { useT } from "../i18n";
 import { useMetadata, usePayments } from "../lib/queries";
 
 function MinerPayments({ address }: { address: string }) {
@@ -48,6 +49,7 @@ function MinerPayments({ address }: { address: string }) {
   );
 }
 function Workers({ address, rigs }: { address: string; rigs: string[] }) {
+  const t = useT();
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string>();
   const currentPage = Math.min(page, Math.max(1, Math.ceil(rigs.length / 8)));
@@ -70,8 +72,8 @@ function Workers({ address, rigs }: { address: string; rigs: string[] }) {
   });
   return (
     <Card
-      title="矿机列表"
-      extra={<Tag variant="filled">{rigs.length} 台已记录</Tag>}
+      title={t.miner.rigList}
+      extra={<Tag variant="filled">{t.miner.rigCount(rigs.length)}</Tag>}
     >
       <Table
         rowKey="name"
@@ -85,10 +87,10 @@ function Workers({ address, rigs }: { address: string; rigs: string[] }) {
           showSizeChanger: false,
         }}
         scroll={{ x: 560 }}
-        locale={{ emptyText: "还没有矿机记录，提交首个份额后即可查看" }}
+        locale={{ emptyText: t.miner.noRigs }}
         columns={[
           {
-            title: "矿机名称",
+            title: t.miner.rigName,
             dataIndex: "name",
             render: (name: string) => (
               <Button
@@ -102,7 +104,7 @@ function Workers({ address, rigs }: { address: string; rigs: string[] }) {
             ),
           },
           {
-            title: "份额活动",
+            title: t.miner.activity,
             render: (_, { query }) =>
               query.isError ? (
                 <Button
@@ -110,35 +112,33 @@ function Workers({ address, rigs }: { address: string; rigs: string[] }) {
                   danger
                   onClick={() => void query.refetch()}
                 >
-                  重试
+                  {t.common.retry}
                 </Button>
               ) : (
                 <Tag color={query.data?.hashrate1min ? "green" : "default"}>
                   {query.isPending
-                    ? "加载中"
+                    ? t.common.loading
                     : query.data?.hashrate1min
-                      ? "近 1 分钟有工作量"
-                      : "近 1 分钟无工作量"}
+                      ? t.miner.active
+                      : t.miner.idle}
                 </Tag>
               ),
           },
           {
-            title: "1 分钟 · diff/s",
+            title: t.miner.rate1mCol,
             render: (_, { query }) => formatRate(query.data?.hashrate1min),
           },
           {
-            title: "24 小时 · diff/s",
+            title: t.miner.rate1dCol,
             render: (_, { query }) => formatRate(query.data?.hashrate1d),
           },
         ]}
       />
-      <p className="card-subtitle">
-        活动状态基于最近份额速率；低算力矿机可能较长时间没有份额，不等同于连接断开。
-      </p>
+      <p className="card-subtitle">{t.miner.activityNote}</p>
       <Drawer
         open={!!selected}
         onClose={() => setSelected(undefined)}
-        title={selected || "矿机详情"}
+        title={selected || t.miner.rigDetail}
         size={560}
       >
         <QueryState query={detail} />
@@ -148,6 +148,7 @@ function Workers({ address, rigs }: { address: string; rigs: string[] }) {
   );
 }
 export default function MinerPage() {
+  const t = useT();
   const { address = "" } = useParams();
   const valid = validAddress(address);
   const miner = useQuery({
@@ -159,20 +160,20 @@ export default function MinerPage() {
   return (
     <>
       <PageTitle
-        eyebrow="MINER WORKSPACE"
-        title="我的矿机"
-        description="一个钱包地址，掌握你的工作量、矿机与支付。"
+        eyebrow={t.miner.eyebrow}
+        title={t.miner.title}
+        description={t.miner.description}
         extra={valid ? <Refresh query={miner} /> : undefined}
       />
       <Card className="search-card">
         <AddressSearch initial={address} />
       </Card>
       {address && !valid && (
-        <Alert type="warning" title="地址格式不正确，请重新输入。" showIcon />
+        <Alert type="warning" title={t.miner.invalid} showIcon />
       )}
       {!address && (
         <Card className="miner-empty">
-          <Empty description="输入挖矿时使用的钱包地址，即可进入矿工工作台" />
+          <Empty description={t.miner.empty} />
         </Card>
       )}
       {valid && (
@@ -185,44 +186,44 @@ export default function MinerPage() {
                 <Typography.Text className="mono" copyable>
                   {address}
                 </Typography.Text>
-                <Tag variant="filled">钱包直查</Tag>
+                <Tag variant="filled">{t.miner.lookedUp}</Tag>
               </div>
               {!miner.data.rigs.length && (
                 <Alert
                   className="query-alert"
                   showIcon
                   type="info"
-                  title="尚未查到此地址的矿机记录"
-                  description="请确认连接的是当前矿池，并已提交份额；钱包地址区分大小写。"
+                  title={t.miner.notFound}
+                  description={t.miner.notFoundHint}
                 />
               )}
               <div className="metrics-grid">
                 <Metric
-                  label="工作量 · 1 分钟"
+                  label={t.miner.rate1m}
                   value={formatRate(miner.data.hashrate1min)}
                   unit="diff/s"
-                  note="短窗口平均难度速率"
+                  note={t.overview.rateShort}
                   icon={<ThunderboltOutlined />}
                 />
                 <Metric
-                  label="工作量 · 24 小时"
+                  label={t.miner.rate1d}
                   value={formatRate(miner.data.hashrate1d)}
                   unit="diff/s"
-                  note="长窗口平均难度速率"
+                  note={t.overview.rateLong}
                   icon={<ClockCircleOutlined />}
                 />
                 <Metric
-                  label="累计矿机"
+                  label={t.miner.rigs}
                   value={miner.data.rigs.length}
-                  unit="台"
-                  note="此地址下已记录的矿机"
+                  unit={t.miner.rigsUnit}
+                  note={t.miner.rigsNote}
                   icon={<DesktopOutlined />}
                 />
                 <Metric
-                  label="本轮贡献"
+                  label={t.miner.round}
                   value={formatRate(miner.data.roundContrib)}
                   unit="diff"
-                  note="当前轮累计份额难度"
+                  note={t.miner.roundNote}
                   icon={<DatabaseOutlined />}
                 />
               </div>
@@ -231,7 +232,7 @@ export default function MinerPage() {
                 items={[
                   {
                     key: "workers",
-                    label: "矿机与工作量",
+                    label: t.miner.tabRigs,
                     children: (
                       <div className="stack">
                         <Workers
@@ -245,7 +246,7 @@ export default function MinerPage() {
                   },
                   {
                     key: "payments",
-                    label: "余额与支付",
+                    label: t.miner.tabPayments,
                     children: <MinerPayments address={address} />,
                   },
                 ]}

@@ -1,135 +1,219 @@
-# NOMP 矿池前端
+# NOMP pool webpage
 
-[Not-Only-Mining-Pool](https://github.com/mining-pool/not-only-mining-pool) 的矿池网页。独立部署的 React 单页应用，与 Go 后端的 JSON API 对接，界面借鉴 VS Code 的配色与简洁风格。Go 只提供 API，不托管 HTML 或静态文件。使用 React 19、TypeScript、Ant Design 6、React Router、TanStack Query、Recharts 和 Vite。用户无需注册、签名或连接钱包，输入挖矿时使用的钱包地址即可查询。
+English · [简体中文](README.zh-CN.md)
 
-> 后端接口、管理员账号、HTTPS 与跨域配置见矿池仓库的 [API 文档](https://github.com/mining-pool/not-only-mining-pool/blob/master/docs/API_zh.md)（[English](https://github.com/mining-pool/not-only-mining-pool/blob/master/docs/API.md)）。
+The web frontend for [Not-Only-Mining-Pool](https://github.com/mining-pool/not-only-mining-pool):
+a React single-page app that miners use to check their rigs, work and payouts
+with nothing but their wallet address, plus a read-only operations console for
+pool administrators.
 
-## 本地运行
+It is deployed on its own (any static host or the bundled Docker image) and
+talks to the pool's JSON API. The look borrows VS Code's Dark/Light Modern
+colours; English is the primary language, with Simplified Chinese available.
 
-需要 Node.js 22.12+（推荐 Node.js 24 LTS）和 npm。
+![Overview](docs/screenshots/overview-dark.png)
+
+| Light theme | Miner | Payments | Mobile |
+| --- | --- | --- | --- |
+| ![](docs/screenshots/overview-light.png) | ![](docs/screenshots/miner-dark.png) | ![](docs/screenshots/payments-dark.png) | ![](docs/screenshots/mobile.png) |
+
+## Features
+
+- **No accounts for miners.** Enter a wallet address to see work rates, rigs,
+  round contribution, balance and payouts. Addresses are remembered only if the
+  user opts in, and only in their browser.
+- **Privacy by default.** The pool never publishes a miner list. Public pages
+  show the miner count and pool-level payout data; a full address reveals only
+  that address's records. The full index and ledger are admin-only, enforced by
+  the API (see [Privacy](#privacy)).
+- **Operations console** at `/admin` behind the Go server's administrator
+  login (HttpOnly session cookie, CSRF token, rate limiting).
+- **Languages:** English (default and fallback) and Simplified Chinese,
+  detected from the browser and switchable in the top bar.
+- **Light and dark themes**, responsive down to phones, keyboard shortcut
+  `Ctrl/⌘ K` for the address search.
+- **Production-ready hosting:** runtime configuration, strict Content Security
+  Policy, SPA fallback, cache headers, health check and recovery after deploys.
+
+## Pages
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Pool work rates by window, miner count, pool details, address lookup |
+| `/miner/:address` | Rigs (paginated, with per-rig detail), contribution, balance and payouts |
+| `/payments` | Pool payout status and settled blocks; a full address shows its own records |
+| `/connect` | Coin, algorithm and ports with copyable miner settings |
+| `/admin` | Operations overview: API health, payout errors, settled blocks |
+| `/admin/miners` | Miner index (admin only) with per-address details |
+| `/admin/payments` | Full payout ledger and pending transaction |
+| `/admin/config` | Coin, algorithm and port configuration (read-only) |
+
+## Quick start
+
+Requires Node.js 22.12+ (24 LTS recommended).
 
 ```bash
 git clone https://github.com/mining-pool/pool-webpage.git
 cd pool-webpage
 npm ci
-cp .env.example .env.local
-# 修改 .env.local 中的 API 地址、矿池名称和对外挖矿域名
-npm run dev
+npm run dev:demo      # built-in sample data, no pool needed
 ```
 
-默认访问 http://127.0.0.1:5173，需要本机运行的 nomp API，见下文[对接矿池后端](#对接矿池后端)。
+Demo mode is clearly labelled and is a build-time switch only: production
+builds never fall back to sample data and it cannot be enabled at runtime.
 
-没有节点或 Redis 时可以单独预览：
+### Develop against a pool
+
+Run the pool API locally (see the backend's
+[API guide](https://github.com/mining-pool/not-only-mining-pool/blob/master/docs/API.md#quick-start-local-development)),
+with `api.allowedOrigins` containing `http://127.0.0.1:5173`, then:
 
 ```bash
-npm run dev:demo
+cp .env.example .env.local
+npm run dev           # http://127.0.0.1:5173
 ```
 
-演示模式会明确显示“演示数据”，提供可点击的演示矿工地址。普通开发和生产构建不会在请求失败时回退到假数据。`npm run build` 使用 production 模式，不读取 `.env.demo`；不要在 `.env.local` 或生产环境中设置 `VITE_DEMO=true`。
+Vite proxies `/api/*` and `/admin-api/*` to `NOMP_API_TARGET`
+(default `http://127.0.0.1:20000`). Without a real pool you can also run the
+backend's test fixture, which serves the real API on an in-memory Redis:
 
-## 界面
-
-![矿池概览（深色）](docs/screenshots/overview-dark.png)
-
-| 浅色主题                                 | 矿工工作台                           | 支付记录                                | 手机                             |
-| ---------------------------------------- | ------------------------------------ | --------------------------------------- | -------------------------------- |
-| ![](docs/screenshots/overview-light.png) | ![](docs/screenshots/miner-dark.png) | ![](docs/screenshots/payments-dark.png) | ![](docs/screenshots/mobile.png) |
-
-- **顶部栏**：矿池名称、全局钱包地址搜索（`⌘K` / `Ctrl+K` 聚焦，回车直达矿工页）、深浅色切换。
-- **侧边导航**：矿池页面与管理页面两组，以及本机勾选记住的最近查询地址；窄屏下变为抽屉。
-- **状态栏**：接口状态（实时 / 演示 / 不可用）、币种与算法、矿池 1 分钟工作量、最近更新时间。
-
-配色借鉴 VS Code Dark / Light Modern，默认跟随系统，选择保存在本机。数值和地址使用等宽字体。
-
-## 隐私
-
-矿池不公开矿工名单：
-
-- 概览只显示矿工数量，不列出地址；后端公开的 `/api/pool` 也只返回 `minerCount`。
-- 支付记录页不带地址时只显示矿池级信息（已确认高度、待确认批次、结算区块）。输入完整地址后，前端请求 `/api/payments?address=…`，后端只返回该地址的余额与回执。
-- 完整的矿工索引和支付账本只在管理员登录后通过 `/admin-api/*` 返回。
-- 最近查询的地址只在用户勾选“在此设备记住地址”时保存在当前浏览器，可随时清除。
-
-## 页面
-
-| 路由                        | 功能                                                |
-| --------------------------- | --------------------------------------------------- |
-| `/`                         | 矿池概览、统计窗口比较、矿工数量、钱包查询          |
-| `/miner`、`/miner/:address` | 免注册查询、矿机分页及详情、本轮贡献、余额与支付    |
-| `/payments`                 | 矿池结算区块；输入完整地址查看自己的余额与支付回执  |
-| `/connect`                  | 币种、算法、端口、TLS / QUIC 提示、可复制的连接参数 |
-| `/admin`                    | 只读运维概览、接口状态、支付故障、最近结算区块      |
-| `/admin/miners`             | 矿工索引（仅管理员）、查看贡献和矿机数量            |
-| `/admin/payments`           | 全部支付回执、待处理交易及故障信息                  |
-| `/admin/config`             | 当前币种、算法和端口配置检查                        |
-
-矿工地址是公开查询标识，不是登录凭证。地址仅在用户勾选“在此设备记住地址”时写入当前浏览器，并可清除。普通矿工没有账户系统。访问任意管理页面时，未登录会显示管理员登录表单，登录后继续原页面。
-
-## 数据展示约定
-
-前端使用的接口：`/api/`（能力检测）、`/api/pool`、`/api/config/{coin,algorithm,ports}`、`/api/miner/{miner}`、`/api/miner/{miner}/rig/{rig}`、可选的 `/api/payments`；管理页面使用对应的 `/admin-api/*`。接口字段含义见 [API 文档](https://github.com/mining-pool/not-only-mining-pool/blob/master/docs/API_zh.md#公开接口)。
-
-- 工作量按接口原值以 `diff/s` 显示，不在前端换算或补造算力。五个窗口均值用柱状对比，不画成历史趋势；矿工数量和矿机索引不代表在线数量。
-- Go 的 `null` 集合归一化为空数组 / 对象，其余字段由 Zod 校验。请求超时 12 秒；统计每 30 秒、支付每 60 秒更新，隐藏标签页暂停轮询。更新失败会提示并保留上次成功的数据与时间。
-- 矿机分页后只请求当前页最多 8 台的详情；地址或页面变化会取消失效请求。
-- 金额以字符串和 BigInt 按最小单位精确换算，不经浮点。支付接口未注册时显示“未开放支付查询”，已注册但异常时显示请求错误。
-- 管理配置页只展示公开白名单字段；管理功能目前只读。
-- 一套前端对应一个矿池实例，多币种按域名分别构建部署。Quantus 原生 QUIC 与 LuckyPool Stratum 按 `ports.protocol` 区分，矿机启动参数见 [Quantus 文档](https://github.com/mining-pool/not-only-mining-pool/blob/master/engine/quantus/README.md)。
-
-## 配置与目录
-
-| 变量                | 默认                     | 说明                                                                                 |
-| ------------------- | ------------------------ | ------------------------------------------------------------------------------------ |
-| `NOMP_API_TARGET`   | `http://127.0.0.1:20000` | 仅用于 Vite 开发代理                                                                 |
-| `VITE_API_BASE_URL` | 空                       | 独立部署时的 Go API origin，如 `https://api.pool.example`；为空时使用当前网页 origin |
-| `VITE_POOL_NAME`    | `NOMP Pool`              | 展示名称                                                                             |
-| `VITE_STRATUM_HOST` | 当前网页域名             | 实际对外挖矿域名，不含协议或端口                                                     |
-| `VITE_DEMO`         | 关闭                     | 仅显式 `true` 时启用预览数据                                                         |
-
-`VITE_*` 是构建时公开变量，不能放入 RPC 密码、管理员凭证或钱包秘密。修改展示配置后需重新构建。
-
-```text
-src/components/  页面框架（顶部栏、侧边导航、状态栏）、查询输入、状态反馈、统计图、支付表
-src/pages/       用户页面和管理控制台（按路由懒加载）
-src/lib/         API、类型校验、查询 hooks、格式化、主题、最近查询、演示数据
-src/test/        组件测试的 jsdom 环境与渲染工具
-docs/screenshots/ README 截图（npm run dev:demo 下截取）
+```bash
+cd ../not-only-mining-pool
+NOMP_FIXTURE_ADMIN_PASSWORD=dev-password-123 \
+  go run ./scripts/web-fixture -addr 127.0.0.1:20000 -origin http://127.0.0.1:5173
 ```
 
-## 对接矿池后端
+(sign in to `/admin` as `operator` with that password).
 
-后端是 [mining-pool/not-only-mining-pool](https://github.com/mining-pool/not-only-mining-pool)。Go 只提供 API，不托管本站点，两边分别部署：
+## Configuration
 
-```text
-浏览器 ──► 前端站点 https://pool.example         （本仓库 npm run build 产出的 dist/）
-   └────► 矿池 API  https://api.pool.example:20000（nomp 进程的 api 配置段）
+Settings are read at runtime from `/config.js`, falling back to build-time
+`VITE_*` variables. Everything here is public — never put secrets in it.
+
+| Runtime (`config.js` / Docker env) | Build-time | Default | Meaning |
+| --- | --- | --- | --- |
+| `apiBaseUrl` / `NOMP_API_BASE_URL` | `VITE_API_BASE_URL` | same origin | Pool API origin, e.g. `https://api.pool.example:20000` (no path) |
+| `poolName` / `NOMP_POOL_NAME` | `VITE_POOL_NAME` | `NOMP Pool` | Name shown in the UI and page title |
+| `stratumHost` / `NOMP_STRATUM_HOST` | `VITE_STRATUM_HOST` | page host | Host name miners connect to |
+| — | `VITE_DEMO` | off | `true` only for `npm run dev:demo` |
+| — | `NOMP_API_TARGET` | `http://127.0.0.1:20000` | Dev-server proxy target |
+
+Invalid values are rejected (the browser logs an error; the Docker image
+refuses to start).
+
+## Deployment
+
+### Docker
+
+```bash
+docker build -t pool-webpage .
+docker run -d -p 8080:8080 \
+  -e NOMP_API_BASE_URL=https://api.pool.example \
+  -e NOMP_POOL_NAME="Example Pool" \
+  -e NOMP_STRATUM_HOST=stratum.pool.example \
+  pool-webpage
 ```
 
-### 本机联调
+The image runs unprivileged nginx on port 8080 and:
 
-1. 按 [API 文档 · 快速开始](https://github.com/mining-pool/not-only-mining-pool/blob/master/docs/API_zh.md#快速开始本机联调) 启动 nomp：`api.allowedOrigins` 包含 `http://127.0.0.1:5173`；需要管理控制台时用 `./nomp -hash-admin-password` 生成密码哈希，并配置 `api.admin`（本机 HTTP 需 `allowInsecureHTTP: true`）。
-2. 本仓库执行 `npm run dev`。Vite 将 `/api/*`、`/admin-api/*` 代理到 `NOMP_API_TARGET`（默认 `http://127.0.0.1:20000`）并保留 Host，无需额外跨域配置。
-3. 也可以在 `.env.local` 设置 `VITE_API_BASE_URL=http://127.0.0.1:20000` 直接跨端口访问，此时依赖 `allowedOrigins`。测试 Cookie 时前端和 API 请统一使用 `127.0.0.1` 或统一使用 `localhost`。
+- serves `/config.js` from the environment variables above, validated at start;
+- falls back to `index.html` for client routes such as `/miner/:address`;
+- caches content-hashed `/assets/*` for a year and revalidates `index.html`,
+  so deploys take effect immediately;
+- sends a Content Security Policy (scripts from this origin only, API calls
+  only to `NOMP_API_BASE_URL`), `X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy` and `Permissions-Policy`;
+- answers `/healthz` for health checks.
 
-### 生产部署
+Terminate TLS in front of it (load balancer or reverse proxy).
+
+### Any static host
 
 ```bash
 npm ci
-VITE_API_BASE_URL=https://api.pool.example:20000 VITE_POOL_NAME="My Pool" VITE_STRATUM_HOST=stratum.pool.example npm run build
+npm run build         # output in dist/
 ```
 
-- 把 `dist/` 部署到任意静态托管，并把所有未知路径回退到 `/index.html`，否则刷新 `/miner/:address`、`/admin/config` 会 404。项目不要求 Nginx，任何支持 SPA 回退的托管均可。
-- `VITE_API_BASE_URL` 是 API 的 origin：非 443 端口要带端口，不要带路径。
-- 后端 `api.allowedOrigins` 必须包含前端站点的精确 origin（如 `https://pool.example`）。
-- 前端与 API 优先使用同一站点的域名（如 `pool.example` + `api.pool.example`），默认 `SameSite=Strict` 的管理 Cookie 即可工作；完全跨站时需后端设置 `cookieSameSite: "none"`，详见 [CORS 与 Cookie](https://github.com/mining-pool/not-only-mining-pool/blob/master/docs/API_zh.md#cors-与-cookie)。
-- 管理员登录由 Go 校验并使用 HttpOnly Cookie，前端只在内存中保存 CSRF token，不保存密码或会话。权限在后端校验，不依赖前端隐藏路由。
+Then, on your host:
 
-## 验证
+1. Serve `dist/` and rewrite unknown paths to `/index.html`.
+2. Replace `dist/config.js` with your settings, or build with `VITE_*` variables.
+3. Cache `/assets/*` long-term; serve `index.html` and `config.js` with
+   `no-cache`.
+4. Recommended: the headers in
+   [`deploy/nginx/security-headers.inc.template`](deploy/nginx/security-headers.inc.template).
+   The app has no inline scripts, so `script-src 'self'` works; Ant Design
+   needs `style-src 'unsafe-inline'`.
+
+### Backend settings
+
+On the pool API (`config.json`):
+
+- `api.allowedOrigins` must list the site's exact origin, e.g. `https://pool.example`.
+- Prefer a same-site API domain (`pool.example` + `api.pool.example`) so the
+  default `SameSite=Strict` admin cookie works; cross-site deployments need
+  `api.admin.cookieSameSite: "none"`.
+- Serve the API over HTTPS (Go can do it directly with `api.tls`).
+
+Details: [HTTP API guide](https://github.com/mining-pool/not-only-mining-pool/blob/master/docs/API.md).
+
+## Privacy
+
+- `/api/pool` returns `minerCount`, never the address list.
+- `/api/payments` without an address returns pool-level data only; with
+  `?address=` it returns only that address's balance and receipts.
+- The full miner index and payout ledger are returned only to an administrator
+  session via `/admin-api/*`.
+- The frontend never renders lists of other miners outside the admin console,
+  even against an older API that still sends them.
+
+## Data conventions
+
+- Work rates are the API's accepted share difficulty per second (`diff/s`),
+  not device H/s, shown per window (1 min – 24 h) rather than as a time series.
+- API responses are validated (Zod). Requests time out after 12 s; stats
+  refresh every 30 s, payouts every 60 s, and polling pauses in hidden tabs.
+  Failures keep the last good data and show when it was fetched.
+- Amounts are converted from base-unit strings with BigInt — never floats.
+
+## Languages
+
+English is the source dictionary (`src/i18n/en.ts`); other languages implement
+the same type, so a missing key fails the build. To add one, create
+`src/i18n/<code>.ts` typed as `Messages`, register it in `src/i18n/index.tsx`
+and add its Ant Design locale in `src/lib/theme.tsx`. API errors are translated
+from their error codes, not from server text.
+
+## Testing
 
 ```bash
-npm test
-npm run format:check
-npm run build
+npm run check         # TypeScript
+npm test              # unit and component tests (Vitest, jsdom)
+npm run e2e           # browser tests against the real Go API
 ```
 
-测试不依赖真实节点，覆盖：认证契约与会话过期；矿池数据适配与精确金额换算；页面框架（地址搜索与跳转、`Ctrl+K`、主题切换与保存、最近查询、状态栏）；隐私约束（概览不渲染矿工名单、公开支付页不列收款人且只按地址查询、演示数据遵循同样规则）。CI（`.github/workflows/ci.yml`）在每次推送和 PR 上执行格式检查、测试与生产构建。后端测试见矿池仓库。
+`npm run e2e` builds the production bundle, serves it with the production
+headers on `127.0.0.1:4173`, and starts the backend's `scripts/web-fixture`
+(real API, storage, sessions and privacy rules on an in-memory Redis) from
+`NOMP_REPO` (default `../not-only-mining-pool`). It covers live stats, miner
+lookup, address-scoped payouts, the admin login/logout flow with cookies and
+CSRF, language switching and runtime config, and fails on any console error or
+CSP violation. Run `npx playwright install chromium` once, or set
+`PLAYWRIGHT_CHANNEL=chrome` to use an installed Chrome.
+
+CI runs formatting, type checks, unit tests and the build; the end-to-end suite
+against the backend's `master`; and a Docker build with a smoke test of
+routing, headers, caching and config validation.
+
+## Project layout
+
+```text
+src/components/   page frame (top bar, navigation, status bar), shared UI
+src/pages/        user pages and the admin console (lazy-loaded)
+src/i18n/         dictionaries (en, zh) and language detection
+src/lib/          API client, schemas, queries, formatting, theme, config
+src/test/         jsdom setup and render helpers
+e2e/              Playwright tests and the production-like static server
+deploy/nginx/     nginx config, security headers and config validation
+public/           boot.js (theme/language before paint) and default config.js
+```

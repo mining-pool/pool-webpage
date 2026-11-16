@@ -1,6 +1,8 @@
+import { currentLocale } from "../i18n";
+
 export function formatRate(value: number | undefined) {
   if (value === undefined || !Number.isFinite(value)) return "—";
-  return new Intl.NumberFormat("zh-CN", {
+  return new Intl.NumberFormat(currentLocale(), {
     maximumFractionDigits: 3,
     notation: value >= 10000 ? "compact" : "standard",
   }).format(value);
@@ -37,3 +39,9 @@ export function validAddress(value: string): boolean {
     value !== ".."
   );
 }
+
+export const formatNumber = (value: number) =>
+  value.toLocaleString(currentLocale());
+
+export const formatTime = (value: number) =>
+  new Date(value).toLocaleTimeString(currentLocale(), { hour12: false });

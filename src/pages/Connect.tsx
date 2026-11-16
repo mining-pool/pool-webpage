@@ -19,9 +19,11 @@ import { Link } from "react-router-dom";
 import { PageTitle, QueryState } from "../components/Common";
 import { useMetadata } from "../lib/queries";
 import { site } from "../lib/config";
+import { useT } from "../i18n";
 
 export default function Connect() {
   const meta = useMetadata();
+  const t = useT();
   const [port, setPort] = useState<string>();
   const [address, setAddress] = useState("");
   const [worker, setWorker] = useState("worker-01");
@@ -30,6 +32,12 @@ export default function Connect() {
   );
   const selected = entries.find(([key]) => key === port) ?? entries[0];
   const quantus = meta.data?.algorithm.name.toLowerCase() === "poseidon2";
+  const transport = (p: { protocol?: string; tls: boolean }) =>
+    p.protocol === "quic" || (quantus && !p.protocol)
+      ? "QUIC"
+      : p.tls
+        ? "Stratum TLS"
+        : "Stratum TCP";
   const scheme =
     selected &&
     (selected[1].protocol === "quic" || (quantus && !selected[1].protocol))
@@ -43,26 +51,26 @@ export default function Connect() {
   return (
     <>
       <PageTitle
-        eyebrow="GET CONNECTED"
-        title="开始挖矿"
-        description="准备钱包、选择端口，让你的第一份贡献开始计数。"
+        eyebrow={t.connect.eyebrow}
+        title={t.connect.title}
+        description={t.connect.description}
       />
       <Card className="steps-card">
         <Steps
           items={[
             {
-              title: "准备钱包",
-              content: "使用当前币种的收款地址",
+              title: t.connect.step1,
+              content: t.connect.step1Hint,
               icon: <WalletOutlined />,
             },
             {
-              title: "连接矿池",
-              content: "填入地址、端口与矿机名",
+              title: t.connect.step2,
+              content: t.connect.step2Hint,
               icon: <ApiOutlined />,
             },
             {
-              title: "查看贡献",
-              content: "提交份额后查询矿机",
+              title: t.connect.step3,
+              content: t.connect.step3Hint,
               icon: <CheckCircleOutlined />,
             },
           ]}
@@ -73,7 +81,7 @@ export default function Connect() {
         <>
           <div className="overview-grid">
             <Card
-              title="矿机连接信息"
+              title={t.connect.settings}
               extra={
                 <Tag color="green">
                   {meta.data.coin.symbol} · {meta.data.algorithm.name}
@@ -81,28 +89,28 @@ export default function Connect() {
               }
             >
               {!entries.length ? (
-                <Empty description="矿池尚未开放挖矿端口" />
+                <Empty description={t.connect.noPorts} />
               ) : (
                 <div className="connection-form">
-                  <label htmlFor="connect-port">挖矿端口</label>
+                  <label htmlFor="connect-port">{t.connect.port}</label>
                   <Select
                     id="connect-port"
                     value={selected?.[0]}
                     onChange={setPort}
                     options={entries.map(([value, p]) => ({
                       value,
-                      label: `${value} · ${p.tls ? "TLS" : "TCP"} · 难度 ${p.diff}`,
+                      label: t.connect.portOption(value, transport(p), p.diff),
                     }))}
                   />
-                  <label htmlFor="connect-address">钱包地址</label>
+                  <label htmlFor="connect-address">{t.connect.address}</label>
                   <Input
                     id="connect-address"
-                    placeholder="填写你的收款地址"
+                    placeholder={t.connect.addressPlaceholder}
                     value={address}
                     onChange={(e) => setAddress(e.target.value.trim())}
                     maxLength={256}
                   />
-                  <label htmlFor="connect-worker">矿机名称</label>
+                  <label htmlFor="connect-worker">{t.connect.rig}</label>
                   <Input
                     id="connect-worker"
                     value={worker}
@@ -113,20 +121,20 @@ export default function Connect() {
                   />
                   <div className="connection-output">
                     <div>
-                      <span>矿池地址</span>
+                      <span>{t.connect.poolUrl}</span>
                       <Typography.Text copyable className="mono">
                         {endpoint}
                       </Typography.Text>
                     </div>
                     <div>
-                      <span>矿工标识</span>
+                      <span>{t.connect.login}</span>
                       <Typography.Text copyable className="mono">
                         {address || "YOUR_WALLET_ADDRESS"}.
                         {worker || "worker-01"}
                       </Typography.Text>
                     </div>
                     <div>
-                      <span>密码（标准 Stratum）</span>
+                      <span>{t.connect.password}</span>
                       <Typography.Text copyable className="mono">
                         x
                       </Typography.Text>
@@ -135,32 +143,30 @@ export default function Connect() {
                 </div>
               )}
             </Card>
-            <Card title="接入须知">
+            <Card title={t.connect.notes}>
               <div className="guide-list">
                 <div>
                   <span>01</span>
-                  <h3>使用正确的收款地址</h3>
+                  <h3>{t.connect.note1}</h3>
                   <p>
-                    请使用 {meta.data.coin.name} 的
-                    {meta.data.coin.testnet ? "测试网" : "对应网络"}
-                    地址。每台矿机使用不同名称，便于识别。
+                    {t.connect.note1Body(
+                      meta.data.coin.name,
+                      !!meta.data.coin.testnet,
+                    )}
                   </p>
                 </div>
                 <div>
                   <span>02</span>
-                  <h3>选择兼容的挖矿软件</h3>
-                  <p>
-                    选择支持 {meta.data.algorithm.name}{" "}
-                    和矿池端口协议的软件。不同引擎的登录字段、TLS
-                    与证书设置可能不同。
-                  </p>
+                  <h3>{t.connect.note2}</h3>
+                  <p>{t.connect.note2Body(meta.data.algorithm.name)}</p>
                 </div>
                 <div>
                   <span>03</span>
-                  <h3>提交首个有效份额</h3>
+                  <h3>{t.connect.note3}</h3>
                   <p>
-                    启动矿机后，用同一钱包地址进入
-                    <Link to="/miner">我的矿机</Link>，等待统计刷新。
+                    {t.connect.note3Body}{" "}
+                    <Link to="/miner">{t.connect.note3Link}</Link>{" "}
+                    {t.connect.note3After}
                   </p>
                 </div>
               </div>
@@ -171,37 +177,29 @@ export default function Connect() {
               className="query-alert"
               type="info"
               showIcon
-              title="Quantus 接入"
-              description="QUIC 端口用于官方矿工；protocol=stratum 的端口用于支持 LuckyPool Quantus 的矿工。原生 QUIC 不使用标准 Stratum 密码，证书指纹及实际启动参数请按仓库 engine/quantus/README.md 配置。"
+              title={t.connect.quantus}
+              description={t.connect.quantusHint}
             />
           )}
-          <Card title="可用端口">
+          <Card title={t.connect.ports}>
             <Table
               rowKey="port"
               pagination={false}
               scroll={{ x: 500 }}
               dataSource={entries.map(([port, value]) => ({ port, ...value }))}
               columns={[
-                { title: "端口", dataIndex: "port" },
+                { title: t.connect.portCol, dataIndex: "port" },
                 {
-                  title: "传输",
-                  render: (_, p) => (
-                    <Tag>
-                      {p.protocol === "quic" || (quantus && !p.protocol)
-                        ? "QUIC"
-                        : p.tls
-                          ? "Stratum TLS"
-                          : "Stratum TCP"}
-                    </Tag>
-                  ),
+                  title: t.connect.transport,
+                  render: (_, p) => <Tag>{transport(p)}</Tag>,
                 },
-                { title: "初始难度", dataIndex: "diff" },
+                { title: t.connect.diff, dataIndex: "diff" },
                 {
-                  title: "难度模式",
+                  title: t.connect.diffMode,
                   render: (_, p) =>
                     p.varDiff
-                      ? `动态 · ${p.varDiff.minDiff} – ${p.varDiff.maxDiff}`
-                      : "固定难度",
+                      ? t.connect.varDiff(p.varDiff.minDiff, p.varDiff.maxDiff)
+                      : t.connect.fixed,
                 },
               ]}
             />

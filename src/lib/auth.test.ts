@@ -13,7 +13,7 @@ it("distinguishes an expired session from an unconfigured server", async () => {
     .fn()
     .mockResolvedValueOnce(new Response("{}", { status: 401 }))
     .mockResolvedValueOnce(
-      new Response(JSON.stringify({ message: "管理员登录尚未配置" }), {
+      new Response(JSON.stringify({ code: "admin_disabled", message: "x" }), {
         status: 503,
       }),
     );
@@ -21,7 +21,8 @@ it("distinguishes an expired session from an unconfigured server", async () => {
   expect(await auth.session()).toBeNull();
   await expect(auth.session()).rejects.toMatchObject({
     status: 503,
-    message: "管理员登录尚未配置",
+    kind: "auth",
+    code: "admin_disabled",
   });
 });
 it("posts login credentials to Go and attaches the CSRF token on logout", async () => {
@@ -63,5 +64,5 @@ it("rejects malformed session responses", async () => {
     "fetch",
     vi.fn().mockResolvedValue(new Response('{"username":"operator"}')),
   );
-  await expect(auth.session()).rejects.toThrow("无效的数据");
+  await expect(auth.session()).rejects.toMatchObject({ kind: "authFormat" });
 });

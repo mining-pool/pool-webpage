@@ -15,6 +15,7 @@ import {
 import { PageTitle, QueryState } from "./Common";
 import { auth } from "../lib/auth";
 import { ApiError } from "../lib/api";
+import { errorText, useT } from "../i18n";
 
 const sessionKey = ["admin-session"];
 const adminData = (query: Query) =>
@@ -22,6 +23,7 @@ const adminData = (query: Query) =>
 
 export function AdminAccess({ children }: { children: ReactNode }) {
   const client = useQueryClient();
+  const t = useT();
   const session = useQuery({
     queryKey: sessionKey,
     queryFn: ({ signal }) => auth.session(signal),
@@ -69,9 +71,9 @@ export function AdminAccess({ children }: { children: ReactNode }) {
     return (
       <>
         <PageTitle
-          eyebrow="ADMINISTRATION"
-          title="管理控制台"
-          description="正在检查管理员会话。"
+          eyebrow={t.auth.eyebrow}
+          title={t.auth.checkingTitle}
+          description={t.auth.checking}
         />
         <QueryState query={session} />
       </>
@@ -80,24 +82,22 @@ export function AdminAccess({ children }: { children: ReactNode }) {
     return (
       <>
         <PageTitle
-          eyebrow="ADMINISTRATOR SIGN IN"
-          title="管理员登录"
-          description="使用服务器配置的管理员账号进入运维控制台。"
+          eyebrow={t.auth.eyebrow}
+          title={t.auth.title}
+          description={t.auth.description}
         />
         <Card className="admin-login-card">
           <div className="admin-login-icon">
             <SafetyCertificateOutlined />
           </div>
-          <h2>登录管理控制台</h2>
-          <p className="card-subtitle">
-            矿工查询无需登录。此入口仅供矿池管理员使用。
-          </p>
+          <h2>{t.auth.heading}</h2>
+          <p className="card-subtitle">{t.auth.hint}</p>
           {login.error && (
             <Alert
               className="query-alert"
               type="error"
               showIcon
-              title={login.error.message}
+              title={errorText(t, login.error)}
             />
           )}
           <Form
@@ -109,8 +109,8 @@ export function AdminAccess({ children }: { children: ReactNode }) {
           >
             <Form.Item
               name="username"
-              label="管理员账号"
-              rules={[{ required: true, message: "请输入管理员账号" }]}
+              label={t.auth.username}
+              rules={[{ required: true, message: t.auth.usernameRequired }]}
             >
               <Input
                 prefix={<UserOutlined />}
@@ -121,8 +121,8 @@ export function AdminAccess({ children }: { children: ReactNode }) {
             </Form.Item>
             <Form.Item
               name="password"
-              label="密码"
-              rules={[{ required: true, message: "请输入密码" }]}
+              label={t.auth.password}
+              rules={[{ required: true, message: t.auth.passwordRequired }]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
@@ -137,7 +137,7 @@ export function AdminAccess({ children }: { children: ReactNode }) {
               size="large"
               loading={login.isPending}
             >
-              登录
+              {t.auth.submit}
             </Button>
           </Form>
         </Card>
@@ -147,7 +147,7 @@ export function AdminAccess({ children }: { children: ReactNode }) {
     <>
       <div className="admin-session-bar">
         <span>
-          <Tag color="green">已登录</Tag>
+          <Tag color="green">{t.auth.signedIn}</Tag>
           {session.data.username}
         </span>
         <Button
@@ -155,7 +155,7 @@ export function AdminAccess({ children }: { children: ReactNode }) {
           loading={logout.isPending}
           onClick={() => logout.mutate()}
         >
-          退出登录
+          {t.auth.logout}
         </Button>
       </div>
       {logout.error && (
@@ -163,7 +163,7 @@ export function AdminAccess({ children }: { children: ReactNode }) {
           className="query-alert"
           type="error"
           showIcon
-          title={logout.error.message}
+          title={errorText(t, logout.error)}
         />
       )}
       {children}

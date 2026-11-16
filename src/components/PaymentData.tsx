@@ -1,7 +1,8 @@
 import { Alert, Card, Empty, Table, Tag, Typography } from "antd";
 import { Link } from "react-router-dom";
 import type { Payments } from "../lib/schemas";
-import { formatUnits, minerPath, shorten } from "../lib/format";
+import { formatNumber, formatUnits, minerPath, shorten } from "../lib/format";
+import { useT } from "../i18n";
 
 export function PaymentData({
   data,
@@ -12,11 +13,12 @@ export function PaymentData({
   address?: string;
   symbol?: string;
 }) {
+  const t = useT();
   if (!data)
     return (
       <Card>
-        <Empty description="当前矿池未开放支付查询" />
-        <p className="center-note">支付记录将在矿池提供查询接口后显示。</p>
+        <Empty description={t.payments.unsupported} />
+        <p className="center-note">{t.payments.unsupportedHint}</p>
       </Card>
     );
   const rows = [...data.paid].reverse().flatMap((receipt, receiptIndex) =>
@@ -39,21 +41,21 @@ export function PaymentData({
         <Alert
           type="error"
           showIcon
-          title="支付处理异常"
+          title={t.payments.fault}
           description={data.fault}
         />
       )}
       {address && (
         <div className="balance-banner">
           <div>
-            <span>待结算余额</span>
+            <span>{t.payments.balance}</span>
             <strong className="mono">
               {formatUnits(data.balances[address] ?? "0", data.decimals)}{" "}
               <small>{symbol}</small>
             </strong>
           </div>
           <Tag color="green">
-            已确认高度 {data.finalizedHeight.toLocaleString()}
+            {t.payments.finalized(formatNumber(data.finalizedHeight))}
           </Tag>
         </div>
       )}
@@ -61,7 +63,7 @@ export function PaymentData({
         <Alert
           type="info"
           showIcon
-          title="有支付正在等待确认"
+          title={t.payments.pendingTitle}
           description={
             <div>
               {pending.map((output, i) => (
@@ -71,22 +73,25 @@ export function PaymentData({
                 </div>
               ))}
               <Typography.Text className="mono" copyable={!!data.pending?.hash}>
-                {data.pending?.hash || "尚未广播"}
+                {data.pending?.hash || t.payments.notBroadcast}
               </Typography.Text>
             </div>
           }
         />
       )}
-      <Card title="已确认支付" extra={<Tag variant="filled">最终确认</Tag>}>
+      <Card
+        title={t.payments.confirmed}
+        extra={<Tag variant="filled">{t.payments.confirmedTag}</Tag>}
+      >
         <Table
           dataSource={rows}
           rowKey="key"
           pagination={{ pageSize: 8, hideOnSinglePage: true }}
           scroll={{ x: 650 }}
-          locale={{ emptyText: "暂无已确认支付" }}
+          locale={{ emptyText: t.payments.noPayouts }}
           columns={[
             {
-              title: "交易哈希",
+              title: t.payments.txHash,
               dataIndex: "hash",
               render: (hash: string) => (
                 <Typography.Text
@@ -101,7 +106,7 @@ export function PaymentData({
             ...(!address
               ? [
                   {
-                    title: "收款矿工",
+                    title: t.payments.recipient,
                     dataIndex: "address",
                     render: (value: string) => (
                       <Link
@@ -116,7 +121,7 @@ export function PaymentData({
                 ]
               : []),
             {
-              title: `金额 ${symbol}`,
+              title: t.payments.amount(symbol),
               dataIndex: "amount",
               render: (value: string) => (
                 <strong className="mono">
@@ -125,15 +130,13 @@ export function PaymentData({
               ),
             },
             {
-              title: "确认高度",
+              title: t.payments.height,
               dataIndex: "height",
-              render: (value: number) => value.toLocaleString(),
+              render: (value: number) => formatNumber(value),
             },
           ]}
         />
-        <p className="card-subtitle">
-          展示接口保留的最近最多 100 笔交易回执，金额按最小单位精确换算。
-        </p>
+        <p className="card-subtitle">{t.payments.receiptNote}</p>
       </Card>
     </div>
   );
@@ -146,21 +149,22 @@ export function BlocksTable({
   data: Payments;
   symbol?: string;
 }) {
+  const t = useT();
   return (
     <Table
       rowKey="hash"
       pagination={{ pageSize: 5, hideOnSinglePage: true }}
       scroll={{ x: 540 }}
-      locale={{ emptyText: "暂无已结算区块" }}
+      locale={{ emptyText: t.payments.noBlocks }}
       dataSource={[...data.blocks].reverse()}
       columns={[
         {
-          title: "高度",
+          title: t.payments.height,
           dataIndex: "height",
-          render: (value: number) => value.toLocaleString(),
+          render: (value: number) => formatNumber(value),
         },
         {
-          title: "区块哈希",
+          title: t.payments.blockHash,
           dataIndex: "hash",
           render: (hash: string) => (
             <Typography.Text
@@ -173,7 +177,7 @@ export function BlocksTable({
           ),
         },
         {
-          title: "奖励",
+          title: t.payments.reward,
           dataIndex: "reward",
           render: (value: string) => (
             <span className="mono">

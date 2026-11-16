@@ -58,10 +58,15 @@ export const portsSchema = z.record(
     varDiff: z
       .object({ minDiff: number, maxDiff: number, targetTime: number })
       .nullish(),
-    tls: z.unknown().transform((value) => value != null),
+    // Current API: boolean. Older APIs sent the TLS options object or null.
+    tls: z
+      .unknown()
+      .transform((value) =>
+        typeof value === "boolean" ? value : value != null,
+      ),
   }),
 );
-const units = z.string().regex(/^\d+$/, "金额必须是整数字符串");
+const units = z.string().regex(/^\d+$/, "amount must be an integer string");
 const output = z.object({ address: z.string(), amount: units });
 export const paymentsSchema = z.object({
   decimals: z.number().int().min(0).max(30),

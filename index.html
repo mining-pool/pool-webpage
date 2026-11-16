@@ -1,29 +1,18 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#181818" />
     <meta
       name="description"
-      content="NOMP 矿池：无需注册，通过钱包地址查询矿机、工作量和支付记录。"
+      content="Mining pool dashboard: look up your rigs, work and payouts with your wallet address. No sign-up."
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>NOMP · 矿池控制台</title>
-    <script>
-      // Apply the saved colour theme before first paint.
-      try {
-        var t = localStorage.getItem("nomp:theme");
-        document.documentElement.dataset.theme =
-          t === "light" || t === "dark"
-            ? t
-            : matchMedia("(prefers-color-scheme: light)").matches
-              ? "light"
-              : "dark";
-      } catch (e) {
-        document.documentElement.dataset.theme = "dark";
-      }
-    </script>
+    <title>NOMP Pool</title>
+    <!-- Classic scripts (no inline code) so a strict CSP can allow 'self' only. -->
+    <script src="/boot.js"></script>
+    <script src="/config.js"></script>
   </head>
   <body>
     <div id="root"></div>

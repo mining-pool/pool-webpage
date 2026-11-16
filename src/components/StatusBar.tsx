@@ -1,21 +1,23 @@
 import { Tooltip } from "antd";
 import { SyncOutlined } from "@ant-design/icons";
 import { site } from "../lib/config";
-import { formatRate } from "../lib/format";
+import { formatRate, formatTime } from "../lib/format";
+import { useT } from "../i18n";
 import { useMetadata, usePool } from "../lib/queries";
 
 export function StatusBar() {
   const pool = usePool();
   const meta = useMetadata();
+  const t = useT();
   const state = site.demo
-    ? { label: "演示数据", tone: "warn" }
+    ? { label: t.status.demo, tone: "warn" }
     : pool.isError
-      ? { label: "接口不可用", tone: "error" }
+      ? { label: t.status.down, tone: "error" }
       : pool.data
-        ? { label: "实时接口", tone: "ok" }
-        : { label: "连接中", tone: "" };
+        ? { label: t.status.live, tone: "ok" }
+        : { label: t.status.connecting, tone: "" };
   return (
-    <footer className="statusbar" aria-label="矿池状态">
+    <footer className="statusbar" aria-label={t.status.label}>
       <div className="status-group">
         <span className={`status-item ${state.tone}`} role="status">
           <span className="status-dot" aria-hidden="true" />
@@ -29,7 +31,7 @@ export function StatusBar() {
       </div>
       <div className="status-group">
         {pool.data && (
-          <Tooltip title="矿池 1 分钟窗口平均难度速率">
+          <Tooltip title={t.status.rateHint}>
             <span className="status-item">
               {formatRate(pool.data.hashrate1min)} diff/s
             </span>
@@ -37,11 +39,7 @@ export function StatusBar() {
         )}
         <span className="status-item">
           <SyncOutlined spin={pool.isFetching} aria-hidden="true" />
-          {pool.dataUpdatedAt
-            ? new Date(pool.dataUpdatedAt).toLocaleTimeString("zh-CN", {
-                hour12: false,
-              })
-            : "—"}
+          {pool.dataUpdatedAt ? formatTime(pool.dataUpdatedAt) : "—"}
         </span>
       </div>
     </footer>

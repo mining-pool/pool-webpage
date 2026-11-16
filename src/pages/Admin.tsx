@@ -30,74 +30,77 @@ import {
   Refresh,
 } from "../components/Common";
 import { api } from "../lib/api";
-import { formatRate, minerPath } from "../lib/format";
+import { formatNumber, formatRate, minerPath } from "../lib/format";
 import { useMetadata, usePayments, usePool } from "../lib/queries";
 import { site } from "../lib/config";
+import { useT } from "../i18n";
 import PaymentsPage from "./Payments";
 
 function Operations() {
   const pool = usePool(true);
   const meta = useMetadata(true);
   const payments = usePayments(true);
+  const t = useT();
   return (
     <>
       <PageTitle
-        eyebrow="OPERATIONS CENTER"
-        title="运行概览"
-        description="集中查看矿池工作量、接入配置和支付处理状态。"
+        eyebrow={t.admin.opsEyebrow}
+        title={t.admin.opsTitle}
+        description={t.admin.opsDescription}
         extra={<Refresh query={pool} />}
       />
       <QueryState query={pool} />
       <div className="metrics-grid">
         <Metric
-          label="矿池工作量 · 1 分钟"
+          label={t.admin.rate1m}
           value={formatRate(pool.data?.hashrate1min)}
           unit="diff/s"
-          note="接口返回的难度速率"
+          note={t.admin.rateNote}
           icon={<ThunderboltOutlined />}
         />
         <Metric
-          label="累计矿工"
-          value={pool.data?.miners.length ?? "—"}
-          unit="个"
-          note="历史份额提交地址"
+          label={t.admin.miners}
+          value={pool.data ? formatNumber(pool.data.minerCount) : "—"}
+          note={t.admin.minersNote}
           icon={<TeamOutlined />}
         />
         <Metric
-          label="挖矿端口"
+          label={t.admin.ports}
           value={meta.data ? Object.keys(meta.data.ports).length : "—"}
-          unit="个"
-          note="当前已加载的端口配置"
+          note={t.admin.portsNote}
           icon={<ApiOutlined />}
         />
         <Metric
-          label="待确认候选"
+          label={t.admin.candidates}
           value={payments.data?.unconfirmedCandidates ?? "—"}
-          unit="个"
-          note="支付接口提供的区块候选数量"
+          note={t.admin.candidatesNote}
           icon={<DatabaseOutlined />}
         />
       </div>
       <div className="overview-grid">
         {pool.data && <RateChart data={pool.data} />}
-        <Card title="接口与支付状态">
+        <Card title={t.admin.health}>
           <div className="health-list">
             <div>
-              <span>矿池统计</span>
+              <span>{t.admin.stats}</span>
               <Tag color={pool.isError ? "error" : "green"}>
-                {pool.isError ? "更新失败" : "可访问"}
+                {pool.isError ? t.admin.failed : t.admin.ok}
               </Tag>
             </div>
             <div>
-              <span>币种与端口配置</span>
+              <span>{t.admin.configApi}</span>
               <Tag
                 color={meta.isError ? "error" : meta.data ? "green" : "default"}
               >
-                {meta.isError ? "不可用" : meta.data ? "可访问" : "检查中"}
+                {meta.isError
+                  ? t.admin.down
+                  : meta.data
+                    ? t.admin.ok
+                    : t.admin.checking}
               </Tag>
             </div>
             <div>
-              <span>支付查询</span>
+              <span>{t.admin.paymentsApi}</span>
               <Tag
                 color={
                   payments.isError
@@ -108,30 +111,28 @@ function Operations() {
                 }
               >
                 {payments.isError
-                  ? "不可用"
+                  ? t.admin.down
                   : payments.data === null
-                    ? "未提供"
+                    ? t.admin.absent
                     : payments.data
-                      ? "已提供"
-                      : "检查中"}
+                      ? t.admin.offered
+                      : t.admin.checking}
               </Tag>
             </div>
             <div>
-              <span>支付处理</span>
+              <span>{t.admin.paymentsRun}</span>
               <Tag color={payments.data?.fault ? "error" : "default"}>
                 {payments.data?.fault
-                  ? "异常"
+                  ? t.admin.faulted
                   : payments.data?.pending
-                    ? "待确认"
+                    ? t.admin.pending
                     : payments.data
-                      ? "无待处理交易"
+                      ? t.admin.idle
                       : "—"}
               </Tag>
             </div>
           </div>
-          <p className="card-subtitle">
-            接口可访问不代表节点、Redis 或 Stratum 连接全部健康。
-          </p>
+          <p className="card-subtitle">{t.admin.healthNote}</p>
         </Card>
       </div>
       <QueryState query={meta} />
@@ -140,19 +141,19 @@ function Operations() {
         <Alert
           className="query-alert"
           type="error"
-          title="支付故障"
+          title={t.admin.fault}
           description={payments.data.fault}
           showIcon
         />
       )}
       <Card
-        title="最近结算区块"
-        extra={<Link to="/admin/payments">检查支付 →</Link>}
+        title={t.admin.blocks}
+        extra={<Link to="/admin/payments">{t.admin.checkPayments}</Link>}
       >
         {payments.data ? (
           <BlocksTable data={payments.data} symbol={meta.data?.coin.symbol} />
         ) : (
-          <Empty description="当前没有可展示的结算区块数据" />
+          <Empty description={t.admin.noBlocks} />
         )}
       </Card>
     </>
@@ -160,6 +161,7 @@ function Operations() {
 }
 function Miners() {
   const pool = usePool(true);
+  const t = useT();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string>();
   const detail = useQuery({
@@ -175,17 +177,20 @@ function Miners() {
   return (
     <>
       <PageTitle
-        eyebrow="MINER DIRECTORY"
-        title="矿工管理"
-        description="检索历史矿工索引，检查单个地址的矿机与本轮贡献。"
+        eyebrow={t.admin.minersEyebrow}
+        title={t.admin.minersTitle}
+        description={t.admin.minersDescription}
         extra={<Refresh query={pool} />}
       />
       <QueryState query={pool} />
-      <Card title="矿工索引" extra={<Tag>{rows.length} 个地址</Tag>}>
+      <Card
+        title={t.admin.index}
+        extra={<Tag>{t.admin.indexCount(rows.length)}</Tag>}
+      >
         <Input.Search
           className="table-search"
-          placeholder="按钱包地址筛选（区分大小写）"
-          aria-label="筛选矿工"
+          placeholder={t.admin.filter}
+          aria-label={t.admin.filter}
           allowClear
           onChange={(e) => setSearch(e.target.value.trim())}
         />
@@ -201,7 +206,7 @@ function Miners() {
           scroll={{ x: 600 }}
           columns={[
             {
-              title: "钱包地址",
+              title: t.admin.address,
               dataIndex: "address",
               render: (address: string) => (
                 <Typography.Text className="mono" copyable={{ text: address }}>
@@ -210,15 +215,15 @@ function Miners() {
               ),
             },
             {
-              title: "记录类型",
-              render: () => <Tag variant="filled">历史矿工</Tag>,
+              title: t.admin.kind,
+              render: () => <Tag variant="filled">{t.admin.historical}</Tag>,
             },
             {
-              title: "操作",
+              title: t.admin.actions,
               dataIndex: "address",
               render: (address: string) => (
                 <Button type="link" onClick={() => setSelected(address)}>
-                  查看详情
+                  {t.admin.details}
                 </Button>
               ),
             },
@@ -229,7 +234,7 @@ function Miners() {
         open={!!selected}
         onClose={() => setSelected(undefined)}
         size={600}
-        title="矿工详情"
+        title={t.admin.minerDetail}
       >
         <QueryState query={detail} />
         {detail.data && (
@@ -242,18 +247,18 @@ function Miners() {
               items={[
                 {
                   key: "rigs",
-                  label: "累计矿机",
+                  label: t.admin.rigs,
                   children: detail.data.rigs.length,
                 },
                 {
                   key: "round",
-                  label: "本轮贡献",
+                  label: t.admin.round,
                   children: `${formatRate(detail.data.roundContrib)} diff`,
                 },
               ]}
             />
             <RateChart data={detail.data} />
-            <Link to={minerPath(selected!)}>打开矿工工作台 →</Link>
+            <Link to={minerPath(selected!)}>{t.admin.openMiner}</Link>
           </div>
         )}
       </Drawer>
@@ -262,59 +267,67 @@ function Miners() {
 }
 function Configuration() {
   const meta = useMetadata(true);
+  const t = useT();
   return (
     <>
       <PageTitle
-        eyebrow="POOL CONFIGURATION"
-        title="矿池配置"
-        description="检查当前矿池已加载的币种、算法与端口设置。"
+        eyebrow={t.admin.configEyebrow}
+        title={t.admin.configTitle}
+        description={t.admin.configDescription}
         extra={<Refresh query={meta} />}
       />
       <Alert
         className="query-alert"
         type="info"
         showIcon
-        title="配置只读"
-        description="修改配置需要在服务器上编辑矿池配置文件并按运维流程重启实例。当前后端没有配置写入接口。"
+        title={t.admin.readOnly}
+        description={t.admin.readOnlyHint}
       />
       <QueryState query={meta} />
       {meta.data && (
         <div className="stack">
-          <Card title="基本信息">
+          <Card title={t.admin.basics}>
             <Descriptions
               bordered
               column={{ xs: 1, sm: 2 }}
               items={[
-                { key: "name", label: "币种", children: meta.data.coin.name },
+                {
+                  key: "name",
+                  label: t.admin.coin,
+                  children: meta.data.coin.name,
+                },
                 {
                   key: "symbol",
-                  label: "符号",
+                  label: t.admin.symbol,
                   children: meta.data.coin.symbol,
                 },
                 {
                   key: "algorithm",
-                  label: "算法",
+                  label: t.admin.algorithm,
                   children: meta.data.algorithm.name,
                 },
                 {
                   key: "network",
-                  label: "测试网络",
-                  children: meta.data.coin.testnet ? "是" : "否 / 未声明",
+                  label: t.admin.testnet,
+                  children: meta.data.coin.testnet
+                    ? t.common.yes
+                    : t.admin.testnetNo,
                 },
                 {
                   key: "multiplier",
-                  label: "算法倍率",
-                  children: meta.data.algorithm.multiplier ?? "未声明",
+                  label: t.admin.multiplier,
+                  children:
+                    meta.data.algorithm.multiplier ?? t.admin.undeclared,
                 },
                 {
                   key: "host",
-                  label: "前端展示的挖矿域名",
+                  label: t.admin.stratumHost,
                   children: site.stratumHost,
                 },
               ]}
             />
           </Card>
-          <Card title="端口配置">
+          <Card title={t.admin.portConfig}>
             <Table
               rowKey="port"
               pagination={false}
@@ -323,28 +336,28 @@ function Configuration() {
                 ([port, value]) => ({ port, ...value }),
               )}
               columns={[
-                { title: "端口", dataIndex: "port" },
+                { title: t.connect.portCol, dataIndex: "port" },
                 {
-                  title: "协议声明",
+                  title: t.admin.protocol,
                   dataIndex: "protocol",
-                  render: (value?: string) => value || "引擎默认",
+                  render: (value?: string) => value || t.admin.engineDefault,
                 },
-                { title: "初始难度", dataIndex: "diff" },
+                { title: t.connect.diff, dataIndex: "diff" },
                 {
-                  title: "TLS",
+                  title: t.admin.tls,
                   dataIndex: "tls",
                   render: (value: boolean) => (
                     <Tag color={value ? "green" : "default"}>
-                      {value ? "启用" : "未配置"}
+                      {value ? t.admin.tlsOn : t.admin.tlsOff}
                     </Tag>
                   ),
                 },
                 {
-                  title: "动态难度",
+                  title: t.admin.varDiff,
                   render: (_, value) =>
                     value.varDiff
                       ? `${value.varDiff.minDiff} – ${value.varDiff.maxDiff}`
-                      : "未启用",
+                      : t.admin.varDiffOff,
                 },
               ]}
             />
@@ -355,6 +368,7 @@ function Configuration() {
   );
 }
 function AdminRoutes() {
+  const t = useT();
   return (
     <>
       {site.demo && (
@@ -362,8 +376,8 @@ function AdminRoutes() {
           className="query-alert"
           type="warning"
           showIcon
-          title="演示管理台 · 数据仅用于界面预览"
-          description="真实管理台需要使用 Go 后端配置的管理员账号登录。"
+          title={t.admin.demoBanner}
+          description={t.admin.demoBannerHint}
         />
       )}
       <Routes>
@@ -377,8 +391,8 @@ function AdminRoutes() {
           element={
             <Result
               status="404"
-              title="管理页面不存在"
-              extra={<Link to="/admin">返回运行概览</Link>}
+              title={t.admin.notFound}
+              extra={<Link to="/admin">{t.admin.backToOps}</Link>}
             />
           }
         />

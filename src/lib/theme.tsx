@@ -8,7 +8,9 @@ import {
   type ReactNode,
 } from "react";
 import { ConfigProvider, theme as antdTheme } from "antd";
+import enUS from "antd/locale/en_US";
 import zhCN from "antd/locale/zh_CN";
+import { useLanguage } from "../i18n";
 
 export type Mode = "dark" | "light";
 
@@ -64,6 +66,7 @@ function initialMode(): Mode {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<Mode>(initialMode);
+  const { lang } = useLanguage();
   const colors = palettes[mode];
   useEffect(() => {
     document.documentElement.dataset.theme = mode;
@@ -91,7 +94,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
     <ThemeContext.Provider value={value}>
       <ConfigProvider
-        locale={zhCN}
+        locale={lang === "zh" ? zhCN : enUS}
         theme={{
           algorithm:
             mode === "dark"

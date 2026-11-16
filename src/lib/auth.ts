@@ -26,23 +26,22 @@ async function authRequest<T>(
     });
   } catch (error) {
     if (init.signal?.aborted) throw error;
-    throw new ApiError("无法连接登录服务，请稍后重试。");
+    throw new ApiError("authNetwork");
   }
   if (!response.ok) {
     const data = z
-      .object({ message: z.string().max(500) })
+      .object({ code: z.string().max(64) })
       .safeParse(await response.json().catch(() => null));
     throw new ApiError(
-      data.success
-        ? data.data.message
-        : `登录服务暂不可用（${response.status}）。`,
+      "auth",
       response.status,
+      data.success ? data.data.code : undefined,
     );
   }
   try {
     return schema.parse(await response.json());
   } catch {
-    throw new ApiError("登录服务返回了无效的数据。");
+    throw new ApiError("authFormat");
   }
 }
 

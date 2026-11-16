@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { validAddress } from "./format";
 
-// Addresses are stored only when the user opts in ("在此设备记住地址").
+// Addresses are stored only when the user opts in ("Remember on this device").
 const key = "nomp:recent-addresses";
 const event = "nomp:recent-changed";
 

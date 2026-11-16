@@ -3,7 +3,8 @@ import { Alert, Card, Empty, Input, Tag, Typography } from "antd";
 import { BlocksTable, PaymentData } from "../components/PaymentData";
 import { PageTitle, QueryState, Refresh } from "../components/Common";
 import { useMetadata, usePayments } from "../lib/queries";
-import { validAddress } from "../lib/format";
+import { formatNumber, validAddress } from "../lib/format";
+import { useT } from "../i18n";
 
 export default function Payments({ admin = false }: { admin?: boolean }) {
   const [address, setAddress] = useState("");
@@ -12,26 +13,25 @@ export default function Payments({ admin = false }: { admin?: boolean }) {
   // once and filter locally.
   const payments = usePayments(admin, admin ? "" : address);
   const meta = useMetadata(admin);
+  const t = useT();
   const symbol = meta.data?.coin.symbol;
   return (
     <>
       <PageTitle
-        eyebrow={admin ? "PAYMENT MONITOR" : "PAYMENT RECORDS"}
-        title={admin ? "支付监控" : "支付记录"}
+        eyebrow={admin ? t.payments.adminEyebrow : t.payments.eyebrow}
+        title={admin ? t.payments.adminTitle : t.payments.title}
         description={
-          admin
-            ? "查看全部链上最终确认的支付回执与待处理交易。"
-            : "输入你的收款地址，查看余额、待确认交易和已确认支付。"
+          admin ? t.payments.adminDescription : t.payments.description
         }
         extra={<Refresh query={payments} />}
       />
       <Card className="filter-card">
         <Input.Search
-          aria-label={admin ? "筛选收款地址" : "收款地址"}
+          aria-label={
+            admin ? t.payments.adminFilterLabel : t.payments.filterLabel
+          }
           placeholder={
-            admin
-              ? "输入完整收款地址，筛选支付记录"
-              : "输入完整收款地址查询（区分大小写）"
+            admin ? t.payments.adminPlaceholder : t.payments.placeholder
           }
           allowClear
           status={invalid ? "error" : undefined}
@@ -42,18 +42,18 @@ export default function Payments({ admin = false }: { admin?: boolean }) {
             setInvalid(!ok);
             if (ok) setAddress(next);
           }}
-          enterButton={admin ? "筛选" : "查询"}
+          enterButton={admin ? t.payments.adminSubmit : t.payments.submit}
         />
         {invalid && (
           <p className="field-error" role="alert">
-            地址格式不正确（不能包含空白、/、?、#）。
+            {t.payments.invalid}
           </p>
         )}
       </Card>
       <QueryState query={payments} />
       {payments.data === null && (
         <Card>
-          <Empty description="当前矿池未开放支付查询" />
+          <Empty description={t.payments.unsupported} />
         </Card>
       )}
       {payments.data &&
@@ -69,42 +69,44 @@ export default function Payments({ admin = false }: { admin?: boolean }) {
               <Alert
                 type="warning"
                 showIcon
-                title="支付处理暂时延迟"
-                description="矿池正在处理支付异常，余额不会丢失。"
+                title={t.payments.delayed}
+                description={t.payments.delayedHint}
               />
             )}
             <Card
-              title="支付状态"
+              title={t.payments.statusTitle}
               extra={
                 <Tag color="green">
-                  已确认高度 {payments.data.finalizedHeight.toLocaleString()}
+                  {t.payments.finalized(
+                    formatNumber(payments.data.finalizedHeight),
+                  )}
                 </Tag>
               }
             >
               <div className="info-list">
                 <div>
-                  <span>待确认支付批次</span>
+                  <span>{t.payments.pendingBatch}</span>
                   {payments.data.pending ? (
                     <Typography.Text
                       className="mono"
                       copyable={!!payments.data.pending.hash}
                     >
-                      {payments.data.pending.hash || "尚未广播"}
+                      {payments.data.pending.hash || t.payments.notBroadcast}
                     </Typography.Text>
                   ) : (
-                    <strong>无</strong>
+                    <strong>{t.common.none}</strong>
                   )}
                 </div>
                 <div>
-                  <span>待确认区块候选</span>
-                  <strong>{payments.data.unconfirmedCandidates} 个</strong>
+                  <span>{t.payments.candidates}</span>
+                  <strong>
+                    {formatNumber(payments.data.unconfirmedCandidates)}
+                  </strong>
                 </div>
               </div>
-              <p className="card-subtitle">
-                为保护矿工隐私，矿池不公开全部收款地址；输入你的完整地址即可查看自己的记录。
-              </p>
+              <p className="card-subtitle">{t.payments.privacy}</p>
             </Card>
-            <Card title="最近结算区块">
+            <Card title={t.payments.blocks}>
               <BlocksTable data={payments.data} symbol={symbol} />
             </Card>
           </div>

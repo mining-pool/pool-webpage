@@ -10,12 +10,27 @@ import {
   rigSchema,
 } from "./schemas";
 
+export type ApiErrorKind =
+  | "network"
+  | "session"
+  | "notFound"
+  | "unavailable"
+  | "format"
+  | "auth"
+  | "authNetwork"
+  | "authFormat";
+
+/**
+ * Errors carry a kind (and the Go API's error code), not user-facing prose,
+ * so the UI can show them in the active language (see i18n errorText).
+ */
 export class ApiError extends Error {
   constructor(
-    message: string,
+    public kind: ApiErrorKind,
     public status = 0,
+    public code?: string,
   ) {
-    super(message);
+    super(`${kind}${status ? ` (${status})` : ""}${code ? `: ${code}` : ""}`);
     this.name = "ApiError";
   }
 }
@@ -44,24 +59,25 @@ export async function request<T>(
     );
   } catch (error) {
     if (signal?.aborted) throw error;
-    throw new ApiError("暂时无法连接矿池，请检查网络或稍后重试。");
+    throw new ApiError("network");
   }
   if (!response.ok) {
     if (admin && response.status === 401 && typeof window !== "undefined") {
       window.dispatchEvent(new Event("nomp:session-expired"));
     }
-    const message =
+    throw new ApiError(
       response.status === 401
-        ? "管理员会话已过期，请重新登录。"
+        ? "session"
         : response.status === 404
-          ? "当前矿池未提供此接口。"
-          : `矿池接口暂不可用（${response.status}）。`;
-    throw new ApiError(message, response.status);
+          ? "notFound"
+          : "unavailable",
+      response.status,
+    );
   }
   try {
     return schema.parse(await response.json());
   } catch {
-    throw new ApiError("矿池返回的数据格式不符合接口约定。");
+    throw new ApiError("format");
   }
 }
 

@@ -13,8 +13,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "check": "tsc -b",
-    "format": "prettier --write src vite.config.ts tsconfig.json package.json index.html",
-    "format:check": "prettier --check src vite.config.ts tsconfig.json package.json index.html"
+    "format": "prettier --write src e2e vite.config.ts playwright.config.ts tsconfig.json package.json index.html public",
+    "format:check": "prettier --check src e2e vite.config.ts playwright.config.ts tsconfig.json package.json index.html public",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@ant-design/icons": "^6.3.4",
@@ -27,6 +28,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.10",

@@ -11,7 +11,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatRate } from "../lib/format";
+import { formatRate, formatTime } from "../lib/format";
+import { errorText, useT } from "../i18n";
 import { useTheme } from "../lib/theme";
 
 export function PageTitle({
@@ -41,20 +42,21 @@ export function QueryState({
 }: {
   query: Pick<UseQueryResult, "isPending" | "error" | "refetch" | "isFetching">;
 }) {
+  const t = useT();
   if (query.error)
     return (
       <Alert
         className="query-alert"
         type="error"
         showIcon
-        title="数据更新失败"
-        description={query.error.message}
+        title={t.common.loadFailed}
+        description={errorText(t, query.error)}
         action={
           <Button
             onClick={() => void query.refetch()}
             loading={query.isFetching}
           >
-            重试
+            {t.common.retry}
           </Button>
         }
       />
@@ -75,19 +77,22 @@ export function Refresh({
     "dataUpdatedAt" | "isFetching" | "refetch" | "isError"
   >;
 }) {
+  const t = useT();
   return (
     <div className="refresh">
       <span>
         {query.dataUpdatedAt
-          ? `${query.isError ? "上次成功" : "更新于"} ${new Date(query.dataUpdatedAt).toLocaleTimeString("zh-CN")}`
-          : "等待矿池数据"}
+          ? (query.isError ? t.common.lastSuccess : t.common.updatedAt)(
+              formatTime(query.dataUpdatedAt),
+            )
+          : t.common.waiting}
       </span>
       <Button
         icon={<ReloadOutlined />}
         loading={query.isFetching}
         onClick={() => void query.refetch()}
       >
-        刷新
+        {t.common.refresh}
       </Button>
     </div>
   );
@@ -128,26 +133,27 @@ type RateData = {
 };
 export function RateChart({ data }: { data: RateData }) {
   const { colors } = useTheme();
+  const t = useT();
   const windows = [
-    { label: "1 分钟", rate: data.hashrate1min },
-    { label: "30 分钟", rate: data.hashrate30min },
-    { label: "1 小时", rate: data.hashrate1h },
-    { label: "6 小时", rate: data.hashrate6h },
-    { label: "24 小时", rate: data.hashrate1d },
+    { label: t.rates.m1, rate: data.hashrate1min },
+    { label: t.rates.m30, rate: data.hashrate30min },
+    { label: t.rates.h1, rate: data.hashrate1h },
+    { label: t.rates.h6, rate: data.hashrate6h },
+    { label: t.rates.d1, rate: data.hashrate1d },
   ];
   return (
     <Card
-      title="工作量窗口对比"
+      title={t.rates.chartTitle}
       extra={<Tag variant="filled">diff/s</Tag>}
       className="chart-card"
     >
-      <p className="card-subtitle">不同统计窗口内的平均难度速率</p>
+      <p className="card-subtitle">{t.rates.chartSubtitle}</p>
       <div
         className="rate-chart"
         role="img"
         aria-label={windows
           .map((v) => `${v.label}: ${formatRate(v.rate)} diff/s`)
-          .join("；")}
+          .join("; ")}
       >
         <ResponsiveContainer
           width="100%"
@@ -189,7 +195,7 @@ export function RateChart({ data }: { data: RateData }) {
               labelStyle={{ color: colors.text }}
               formatter={(value) => [
                 `${formatRate(Number(value))} diff/s`,
-                "工作量速率",
+                t.rates.tooltip,
               ]}
             />
             <Bar
@@ -203,7 +209,7 @@ export function RateChart({ data }: { data: RateData }) {
       </div>
       <div className="chart-footnote">
         <span className="legend-dot" />
-        窗口均值 · 非历史时间序列
+        {t.rates.footnote}
       </div>
     </Card>
   );
