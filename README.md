@@ -8,8 +8,9 @@ with nothing but their wallet address, plus a read-only operations console for
 pool administrators.
 
 It is deployed on its own (any static host or the bundled Docker image) and
-talks to the pool's JSON API. The look borrows VS Code's Dark/Light Modern
-colours; English is the primary language, with Simplified Chinese available.
+talks to the pool's JSON API. The look follows VS Code: Dark/Light Modern
+colours, square corners and a centred command-center search. English is the
+primary language, with Simplified Chinese available.
 
 ![Overview](docs/screenshots/overview-dark.png)
 

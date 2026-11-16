@@ -189,7 +189,7 @@ export function RateChart({ data }: { data: RateData }) {
               contentStyle={{
                 background: colors.elevated,
                 border: `1px solid ${colors.border}`,
-                borderRadius: 4,
+                borderRadius: 0,
                 color: colors.text,
               }}
               labelStyle={{ color: colors.text }}
@@ -201,7 +201,7 @@ export function RateChart({ data }: { data: RateData }) {
             <Bar
               dataKey="rate"
               fill={colors.bar}
-              radius={[2, 2, 0, 0]}
+              radius={0}
               isAnimationActive={false}
             />
           </BarChart>

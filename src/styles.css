@@ -130,7 +130,6 @@ kbd {
   font-family: var(--font);
   font-size: 11px;
   padding: 1px 5px;
-  border-radius: 3px;
   border: 1px solid var(--border-strong);
   border-bottom-width: 2px;
   color: var(--muted);
@@ -189,20 +188,31 @@ kbd {
   grid-template-rows: 48px minmax(0, 1fr) 24px;
 }
 
+/* Three columns with equal sides keep the search exactly centred, like the
+   VS Code command center. */
 .topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  padding: 0 12px 0 16px;
+  padding: 0 12px;
   background: var(--titlebar);
   border-bottom: 1px solid var(--border);
+}
+.topbar-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.topbar-side.end {
+  justify-content: flex-end;
 }
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 196px;
-  flex: none;
+  min-width: 0;
   color: var(--fg-strong);
   font-size: 14px;
   font-weight: 600;
@@ -216,7 +226,6 @@ kbd {
   place-items: center;
   width: 24px;
   height: 24px;
-  border-radius: 5px;
   background: var(--accent);
   color: #fff;
   font-size: 14px;
@@ -228,15 +237,13 @@ kbd {
   white-space: nowrap;
 }
 .top-search {
-  flex: 1;
-  max-width: 560px;
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
   height: 30px;
   padding: 0 8px 0 10px;
   border: 1px solid var(--border-strong);
-  border-radius: 6px;
   background: var(--input);
   color: var(--muted);
 }
@@ -270,10 +277,8 @@ kbd {
   place-items: center;
   width: 30px;
   height: 30px;
-  margin-left: auto;
   flex: none;
   border: 0;
-  border-radius: 5px;
   background: transparent;
   color: var(--fg);
   font-size: 16px;
@@ -291,10 +296,8 @@ kbd {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
   padding: 0 6px;
   height: 30px;
-  border-radius: 5px;
   color: var(--muted);
 }
 .lang-select:hover,
@@ -316,9 +319,6 @@ kbd {
 .lang-select select option {
   background: var(--widget);
   color: var(--fg);
-}
-.lang-select ~ .icon-button {
-  margin-left: 0;
 }
 
 .body {
@@ -352,7 +352,6 @@ kbd {
   gap: 10px;
   height: 30px;
   padding: 0 10px;
-  border-radius: 4px;
   color: var(--fg);
   white-space: nowrap;
 }
@@ -372,7 +371,6 @@ kbd {
   top: 7px;
   bottom: 7px;
   width: 2px;
-  border-radius: 1px;
   background: var(--accent);
 }
 .nav-item .anticon {
@@ -404,9 +402,32 @@ kbd {
   margin: 0 auto;
   padding: 24px 32px 48px;
 }
-.page-spin {
-  display: block;
-  margin: 80px auto;
+.progress-bar {
+  position: relative;
+  height: 2px;
+  margin: -24px -32px 22px;
+  overflow: hidden;
+}
+.progress-bar span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2%;
+  background: var(--accent);
+  animation: progress 4s linear infinite;
+}
+@keyframes progress {
+  from {
+    left: 0;
+    width: 2%;
+  }
+  50% {
+    width: 20%;
+  }
+  to {
+    left: 100%;
+    width: 2%;
+  }
 }
 
 /* Status bar */
@@ -434,7 +455,6 @@ kbd {
 .status-dot {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
   background: rgba(255, 255, 255, 0.6);
 }
 .status-item.ok .status-dot {
@@ -509,7 +529,6 @@ kbd {
   padding: 16px !important;
 }
 .ant-tag {
-  border-radius: 3px;
 }
 .ant-table {
   background: transparent !important;
@@ -529,7 +548,6 @@ kbd {
   border-color: var(--border) !important;
 }
 .ant-alert {
-  border-radius: 4px;
 }
 
 .card-subtitle {
@@ -679,7 +697,6 @@ kbd {
 .legend-dot {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
   background: var(--tok-type);
 }
 .info-list,
@@ -723,7 +740,6 @@ kbd {
   width: 20px;
   height: 20px;
   flex: none;
-  border-radius: 3px;
   background: rgba(227, 121, 51, 0.16);
   color: #e37933;
   font-family: var(--mono);
@@ -748,7 +764,6 @@ kbd {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-left: 2px solid var(--accent);
-  border-radius: 4px;
   background: var(--widget);
 }
 .miner-identity .mono {
@@ -771,7 +786,6 @@ kbd {
   gap: 12px;
   padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 4px;
   background: var(--widget);
 }
 .balance-banner > div > span {
@@ -808,7 +822,6 @@ kbd {
   margin-top: 14px;
   padding: 8px 0;
   border: 1px solid var(--border);
-  border-radius: 4px;
   background: var(--editor);
   font-family: var(--mono);
 }
@@ -876,7 +889,6 @@ kbd {
   margin-bottom: 16px;
   padding: 6px 6px 6px 12px;
   border: 1px solid var(--border);
-  border-radius: 4px;
   background: var(--widget);
   font-family: var(--mono);
   font-size: 12px;
@@ -894,7 +906,6 @@ kbd {
   width: 44px;
   height: 44px;
   margin-bottom: 14px;
-  border-radius: 6px;
   background: rgba(224, 82, 82, 0.14);
   color: #e05252;
   font-size: 22px;
@@ -923,8 +934,8 @@ kbd {
   .menu-button {
     display: grid;
   }
-  .brand {
-    width: auto;
+  .topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
   .sidebar {
     position: absolute;
@@ -951,6 +962,9 @@ kbd {
   }
   .content {
     padding: 16px 16px 40px;
+  }
+  .progress-bar {
+    margin: -16px -16px 14px;
   }
   .page-heading {
     flex-direction: column;

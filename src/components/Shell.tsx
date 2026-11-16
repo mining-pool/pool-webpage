@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
-import { Spin, Tooltip } from "antd";
+import { Tooltip } from "antd";
 import {
   ApiOutlined,
   DashboardOutlined,
@@ -58,6 +58,15 @@ const groups: { title: "pool" | "admin"; items: Item[] }[] = [
 const mac =
   typeof navigator !== "undefined" &&
   /Mac|iP(hone|ad)/.test(navigator.platform);
+
+/** Indeterminate progress line, as VS Code shows while a view loads. */
+function ProgressBar({ label }: { label: string }) {
+  return (
+    <div className="progress-bar" role="progressbar" aria-label={label}>
+      <span />
+    </div>
+  );
+}
 
 function LanguageSelect() {
   const { lang, setLang, t } = useLanguage();
@@ -157,35 +166,39 @@ export function Shell() {
         {t.shell.skip}
       </a>
       <header className="topbar">
-        <button
-          type="button"
-          className="icon-button menu-button"
-          aria-label={t.shell.openNav}
-          aria-expanded={menu}
-          onClick={() => setMenu(!menu)}
-        >
-          <MenuOutlined />
-        </button>
-        <NavLink to="/" className="brand" onClick={close}>
-          <span className="brand-mark" aria-hidden="true">
-            N
-          </span>
-          <span className="brand-name">{site.name}</span>
-        </NavLink>
-        <TopSearch />
-        <LanguageSelect />
-        <Tooltip
-          title={mode === "dark" ? t.shell.themeLight : t.shell.themeDark}
-        >
+        <div className="topbar-side">
           <button
             type="button"
-            className="icon-button"
-            aria-label={t.shell.themeToggle}
-            onClick={toggle}
+            className="icon-button menu-button"
+            aria-label={t.shell.openNav}
+            aria-expanded={menu}
+            onClick={() => setMenu(!menu)}
           >
-            {mode === "dark" ? <SunOutlined /> : <MoonOutlined />}
+            <MenuOutlined />
           </button>
-        </Tooltip>
+          <NavLink to="/" className="brand" onClick={close}>
+            <span className="brand-mark" aria-hidden="true">
+              N
+            </span>
+            <span className="brand-name">{site.name}</span>
+          </NavLink>
+        </div>
+        <TopSearch />
+        <div className="topbar-side end">
+          <LanguageSelect />
+          <Tooltip
+            title={mode === "dark" ? t.shell.themeLight : t.shell.themeDark}
+          >
+            <button
+              type="button"
+              className="icon-button"
+              aria-label={t.shell.themeToggle}
+              onClick={toggle}
+            >
+              {mode === "dark" ? <SunOutlined /> : <MoonOutlined />}
+            </button>
+          </Tooltip>
+        </div>
       </header>
 
       <div className="body">
@@ -234,7 +247,7 @@ export function Shell() {
         <main id="main" className="main" tabIndex={-1}>
           <div className="content">
             <ErrorBoundary resetKey={pathname}>
-              <Suspense fallback={<Spin className="page-spin" />}>
+              <Suspense fallback={<ProgressBar label={t.common.loading} />}>
                 <Outlet />
               </Suspense>
             </ErrorBoundary>

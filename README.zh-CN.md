@@ -4,7 +4,7 @@
 
 [Not-Only-Mining-Pool](https://github.com/mining-pool/not-only-mining-pool) 的网页前端：矿工只需钱包地址即可查看矿机、工作量和支付；管理员可使用只读运维控制台。
 
-前端独立部署（任意静态托管或仓库自带的 Docker 镜像），通过矿池的 JSON API 获取数据。配色借鉴 VS Code Dark / Light Modern。英文为主要语言，同时提供简体中文。
+前端独立部署（任意静态托管或仓库自带的 Docker 镜像），通过矿池的 JSON API 获取数据。界面遵循 VS Code 风格：Dark / Light Modern 配色、直角、居中的命令中心式搜索。英文为主要语言，同时提供简体中文。
 
 ![矿池概览](docs/screenshots/overview-dark.png)
 

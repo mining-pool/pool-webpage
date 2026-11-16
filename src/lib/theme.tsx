@@ -111,8 +111,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             colorBorderSecondary: colors.border,
             colorText: colors.text,
             colorTextSecondary: colors.muted,
-            borderRadius: 4,
-            borderRadiusLG: 6,
+            // Square corners throughout, as in VS Code.
+            borderRadius: 0,
+            borderRadiusLG: 0,
+            borderRadiusSM: 0,
+            borderRadiusXS: 0,
+            borderRadiusOuter: 0,
             fontSize: 13,
             fontFamily:
               '-apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',

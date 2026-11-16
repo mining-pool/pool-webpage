@@ -153,3 +153,53 @@ test("runtime config sets the pool name and the API origin", async ({
     "connect-src 'self' http://127.0.0.1:20100",
   );
 });
+
+test("uses square corners everywhere", async ({ page }) => {
+  const rounded = async () =>
+    page.evaluate(() => {
+      const found: string[] = [];
+      for (const el of document.querySelectorAll("body *")) {
+        for (const pseudo of [null, "::before", "::after"]) {
+          const style = getComputedStyle(el, pseudo);
+          if (pseudo && style.content === "none") continue;
+          const radii = [
+            style.borderTopLeftRadius,
+            style.borderTopRightRadius,
+            style.borderBottomLeftRadius,
+            style.borderBottomRightRadius,
+          ];
+          if (radii.some((r) => r !== "0px" && r !== "")) {
+            const name = `${el.tagName.toLowerCase()}.${[...el.classList].join(".")}${pseudo ?? ""}`;
+            found.push(`${name} ${radii.join(" ")}`);
+          }
+        }
+      }
+      return [...new Set(found)];
+    });
+  for (const theme of ["dark", "light"] as const) {
+    await page.emulateMedia({ colorScheme: theme });
+    for (const path of [
+      "/",
+      `/miner/${alpha}`,
+      "/payments",
+      "/connect",
+      "/admin",
+    ]) {
+      await page.goto(path);
+      await expect(page.getByRole("status")).toHaveText("Live");
+      expect(await rounded(), `${theme} ${path}`).toEqual([]);
+    }
+  }
+});
+
+test("centres the header search like a command center", async ({ page }) => {
+  for (const width of [1440, 1100, 900]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/");
+    const box = (await page.getByRole("search").boundingBox())!;
+    expect(
+      Math.abs(box.x + box.width / 2 - width / 2),
+      `width ${width}`,
+    ).toBeLessThanOrEqual(1);
+  }
+});
