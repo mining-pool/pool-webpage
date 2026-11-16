@@ -9,14 +9,15 @@ const sessionSchema = z.object({
 });
 export type AdminSession = z.infer<typeof sessionSchema>;
 
-async function authRequest<T>(
-  endpoint: string,
+/** Requests to the session-protected admin API (credentials included). */
+export async function adminRequest<T>(
+  path: string,
   schema: z.ZodType<T>,
   init: RequestInit = {},
 ): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${site.apiBase}/admin-api/auth/${endpoint}`, {
+    response = await fetch(`${site.apiBase}/admin-api${path}`, {
       ...init,
       signal: init.signal
         ? AbortSignal.any([init.signal, AbortSignal.timeout(12000)])
@@ -44,6 +45,38 @@ async function authRequest<T>(
     throw new ApiError("authFormat");
   }
 }
+
+const authRequest = <T>(
+  endpoint: string,
+  schema: z.ZodType<T>,
+  init: RequestInit = {},
+) => adminRequest(`/auth/${endpoint}`, schema, init);
+
+const list = z
+  .array(z.string())
+  .nullish()
+  .transform((v) => v ?? []);
+const reloadReport = z.object({
+  at: z.string(),
+  trigger: z.string(),
+  ok: z.boolean(),
+  changes: list,
+  errors: list,
+});
+export type ReloadReport = z.infer<typeof reloadReport>;
+
+/** Configuration reload: re-reads config.json on the server (no upload). */
+export const reload = {
+  status: (signal?: AbortSignal) =>
+    adminRequest("/reload", z.object({ last: reloadReport.nullable() }), {
+      signal,
+    }),
+  run: (csrfToken: string) =>
+    adminRequest("/reload", reloadReport, {
+      method: "POST",
+      headers: { "X-CSRF-Token": csrfToken },
+    }),
+};
 
 export const auth = {
   session: async (signal?: AbortSignal): Promise<AdminSession | null> => {

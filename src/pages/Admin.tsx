@@ -22,6 +22,7 @@ import {
 import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { AdminAccess } from "../components/AdminAccess";
 import { BlocksTable } from "../components/PaymentData";
+import { ReloadCard } from "../components/ReloadCard";
 import {
   Metric,
   PageTitle,
@@ -287,6 +288,9 @@ function Configuration() {
         title={t.admin.readOnly}
         description={t.admin.readOnlyHint}
       />
+      <div className="stack reload-section">
+        <ReloadCard />
+      </div>
       <QueryState query={meta} />
       {meta.data && (
         <div className="stack">

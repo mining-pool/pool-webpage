@@ -42,6 +42,7 @@ export const en = {
     session_expired: "Please sign in as an administrator.",
     session_limit: "Too many active sessions. Try again later.",
     csrf_invalid: "Session check failed. Refresh and try again.",
+    reload_unavailable: "This server does not support configuration reload.",
   } as Record<string, string>,
   shell: {
     skip: "Skip to content",
@@ -303,9 +304,25 @@ export const en = {
     configEyebrow: "POOL CONFIGURATION",
     configTitle: "Pool config",
     configDescription: "Coin, algorithm and ports currently loaded.",
-    readOnly: "Read-only",
+    readOnly: "Changing the configuration",
     readOnlyHint:
-      "Change the configuration file on the server and restart the pool to apply changes. The backend has no config write API.",
+      "Edit config.json on the server, then reload it below or send SIGHUP to the nomp process. The settings shown here cannot be edited from the browser.",
+    reloadTitle: "Configuration reload",
+    reloadHint:
+      "Re-reads config.json on the server. Ports, banning, fee recipients, payout thresholds and API access settings apply without a restart; a file that changes anything else is rejected and nothing is applied.",
+    reloadButton: "Reload configuration",
+    reloadNever: "No reload since the pool started.",
+    reloadLast: (time: string, trigger: string) =>
+      `Last reload ${time} · ${trigger}`,
+    reloadTriggers: { signal: "SIGHUP", admin: "admin console" } as Record<
+      string,
+      string
+    >,
+    reloadOk: "Applied",
+    reloadFailed: "Rejected",
+    reloadChanges: "Changes",
+    reloadErrors: "Errors",
+    reloadDemo: "Not available with demo data.",
     basics: "Basics",
     coin: "Coin",
     symbol: "Symbol",

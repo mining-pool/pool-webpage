@@ -1,5 +1,7 @@
 import { expect, test as base } from "@playwright/test";
-import { adminPassword } from "../playwright.config";
+import { readFile, writeFile } from "node:fs/promises";
+import { connect } from "node:net";
+import { adminPassword, fixtureConfig } from "../playwright.config";
 
 // Identities seeded by not-only-mining-pool/scripts/web-fixture.
 const alpha = "qtc1fixtureminer0alpha";
@@ -216,5 +218,57 @@ test("centres the header search like a command center", async ({ page }) => {
       Math.abs(box.x + box.width / 2 - width / 2),
       `width ${width}`,
     ).toBeLessThanOrEqual(1);
+  }
+});
+
+const listening = (port: number) =>
+  new Promise<boolean>((resolve) => {
+    const socket = connect(port, "127.0.0.1");
+    socket.once("connect", () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once("error", () => resolve(false));
+  });
+
+test("admin reloads the configuration from the server", async ({ page }) => {
+  const original = await readFile(fixtureConfig, "utf8");
+  const edit = (change: (cfg: Record<string, any>) => void) => {
+    const cfg = JSON.parse(original);
+    change(cfg);
+    return writeFile(fixtureConfig, JSON.stringify(cfg));
+  };
+  try {
+    await page.goto("/admin/config");
+    await page.getByLabel("Username").fill("operator");
+    await page.getByLabel("Password").fill(adminPassword);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(
+      page.getByText("No reload since the pool started."),
+    ).toBeVisible();
+    expect(await listening(5555)).toBe(false);
+
+    // Add a port: applied without a restart, served at once.
+    await edit((cfg) => {
+      cfg.ports["5555"] = { protocol: "stratum", diff: 2 };
+    });
+    await page.getByRole("button", { name: "Reload configuration" }).click();
+    const report = page.getByTestId("reload-report");
+    await expect(report).toContainText("Applied");
+    await expect(report).toContainText("port 5555 added");
+    await expect(page.locator(".ant-table").last()).toContainText("5555");
+    expect(await listening(5555)).toBe(true);
+
+    // A setting that needs a restart rejects the whole file.
+    await edit((cfg) => {
+      cfg.ports["5555"] = { protocol: "stratum", diff: 2 };
+      cfg.coin.name = "Other";
+    });
+    await page.getByRole("button", { name: "Reload configuration" }).click();
+    await expect(report).toContainText("Rejected");
+    await expect(report).toContainText("coin");
+    expect(await listening(5555)).toBe(true);
+  } finally {
+    await writeFile(fixtureConfig, original);
   }
 });

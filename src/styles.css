@@ -1015,3 +1015,29 @@ kbd {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Configuration reload */
+.reload-section {
+  margin-bottom: 16px;
+}
+.reload-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.reload-report h4 {
+  margin: 12px 0 4px;
+  color: var(--fg-strong);
+  font-size: 12px;
+  font-weight: 600;
+}
+.reload-report ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.reload-errors ul {
+  color: var(--error);
+}
